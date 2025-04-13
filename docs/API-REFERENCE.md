@@ -23,7 +23,32 @@
 ### POST `/api/club/create`
 
 - Cria clube do jogador no servidor
-- Retorna jogadores iniciais, saldo e status
+- Payload:
+
+```json
+{
+  "name": "Nome do Clube",
+  "city": "Cidade",
+  "country": "País",
+  "logo_url": "https://exemplo.com/logo.png",
+  "server_id": "uuid-do-servidor"
+}
+```
+
+- Valores iniciais:
+  - Saldo: 5.000.000
+  - Reputação: 50
+  - Torcida: 1.000
+  - Estádio: 10.000 lugares
+  - Ingresso: 20
+  - Sócios: 100
+- Validações:
+  - Nome: 3-50 caracteres
+  - Cidade/País: 2-50 caracteres
+  - Logo: URL válida (opcional)
+  - Servidor: UUID válido e com vagas
+- Rate Limit: 5 requisições/minuto
+- Cache: 5 minutos
 
 ### GET `/api/club/{id}`
 
@@ -71,7 +96,37 @@
 
 ### POST `/api/club/{id}/tactics`
 
-- Atualiza formação e escalação de titulares/reservas
+- Atualiza formação e escalação do clube
+- Payload:
+
+```json
+{
+  "formation": "4-4-2",
+  "starting_ids": ["uuid1", "uuid2", ...], // 11 jogadores
+  "bench_ids": ["uuid1", "uuid2", ...], // 5-7 jogadores
+  "captain_id": "uuid" // deve estar entre titulares
+}
+```
+
+- Validações:
+  - Formação: formato válido (ex: 4-4-2, 3-5-2)
+  - Titulares: exatamente 11 jogadores
+  - Reservas: 5-7 jogadores
+  - Capitão: deve estar entre titulares
+  - Todos os jogadores devem pertencer ao clube
+- Rate Limit: 10 requisições/minuto (PUT), 30 requisições/minuto (GET)
+- Cache: 5 minutos (GET)
+
+### GET `/api/club/{id}/tactics`
+
+- Retorna formação e escalação atual do clube
+- Inclui dados completos dos jogadores:
+  - Titulares
+  - Reservas
+  - Capitão
+- Campos dos jogadores:
+  - id, name, position
+  - attributes (força, velocidade, etc)
 
 ### GET `/api/players/available`
 

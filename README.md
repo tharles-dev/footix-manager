@@ -89,22 +89,22 @@
 
 #### 2.1 API Base
 
-- [ ] Implementar rotas de API usando Next.js App Router:
-  - [ ] `/api/auth/*` para autenticação
-  - [ ] `/api/server/*` para gerenciamento de servidores
-  - [ ] `/api/club/*` para operações de clube
-  - [ ] `/api/admin/*` para endpoints administrativos
-- [ ] Configurar middleware de autenticação e autorização
-- [ ] Implementar validação de dados com Zod
-- [ ] Configurar tratamento de erros global
-- [ ] Implementar rate limiting e cache
+- [x] Implementar rotas de API usando Next.js App Router:
+  - [x] `/api/auth/*` para autenticação
+  - [x] `/api/server/*` para gerenciamento de servidores
+  - [x] `/api/club/*` para operações de clube
+  - [x] `/api/admin/*` para endpoints administrativos
+- [x] Configurar middleware de autenticação e autorização
+- [x] Implementar validação de dados com Zod
+- [x] Configurar tratamento de erros global
+- [x] Implementar rate limiting e cache
 
 #### 2.2 Sistema de Clubes
 
-- [ ] Implementar endpoints de clube:
-  - [ ] Criação de clube
+- [x] Implementar endpoints de clube:
+  - [x] Criação de clube (com validações e valores iniciais)
   - [ ] Gerenciamento de elenco
-  - [ ] Sistema de táticas
+  - [x] Sistema de táticas (formação, escalação, capitão)
   - [ ] Finanças do clube
 - [ ] Desenvolver lógica de negócio:
   - [ ] Cálculo de salários
