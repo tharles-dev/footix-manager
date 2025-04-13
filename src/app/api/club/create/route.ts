@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@/lib/supabase";
 import { createClubSchema } from "@/lib/api/schemas/club";
 import { validateData } from "@/lib/api/validation";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getCachedData, setCachedData } from "@/lib/api/cache";
 import { ApiError } from "@/lib/api/error";
+import { cookies } from "next/headers";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const cookieStore = cookies();
+const supabase = createServerClient(cookieStore);
 
 export async function POST(request: Request) {
   try {

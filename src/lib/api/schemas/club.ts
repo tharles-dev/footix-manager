@@ -52,3 +52,61 @@ export const terminateContractSchema = z.object({
   player_id: z.string().uuid(),
   reason: z.string().min(10).max(200),
 });
+
+export const addPlayerSchema = z.object({
+  player_id: z.string().uuid(),
+  number: z.number().int().min(1).max(99),
+});
+
+// Schema para ajuste de preço de ingresso
+export const updateTicketPriceSchema = z.object({
+  ticket_price: z.number().min(1).max(1000),
+});
+
+// Schema para ajuste de capacidade do estádio
+export const updateStadiumCapacitySchema = z.object({
+  stadium_capacity: z.number().min(1000).max(100000),
+});
+
+// Schema para ajuste de preço de sócio-torcedor
+export const updateSeasonTicketPriceSchema = z.object({
+  season_ticket_price: z.number().min(10).max(1000),
+});
+
+// Schema para pagamento de multa
+export const payPenaltySchema = z.object({
+  penalty_id: z.string().uuid(),
+});
+
+// Schema para solicitação de empréstimo
+export const requestLoanSchema = z.object({
+  amount: z.number().min(100000).max(10000000),
+  duration_months: z.number().min(3).max(12),
+});
+
+// Schema para pagamento de parcela
+export const payLoanSchema = z.object({
+  loan_id: z.string().uuid(),
+});
+
+// Schema para atualização de orçamento
+export const updateBudgetSchema = z.object({
+  season_budget_base: z.number().min(1000000).max(100000000),
+  season_budget_bonus: z.number().min(0).max(50000000),
+  ticket_price: z.number().min(10).max(1000),
+  season_ticket_price: z.number().min(100).max(10000),
+});
+
+// Schema para registro de despesa
+export const addExpenseSchema = z.object({
+  amount: z.number().min(1000),
+  description: z.string().min(3).max(200),
+  category: z.enum(["salary", "facilities", "marketing", "other"]),
+});
+
+// Schema para registro de receita
+export const addRevenueSchema = z.object({
+  amount: z.number().positive(),
+  description: z.string().min(3).max(255),
+  category: z.enum(["ticket_sales", "merchandise", "sponsorship", "other"]),
+});

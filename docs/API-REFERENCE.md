@@ -131,6 +131,66 @@
 ### GET `/api/players/available`
 
 - Lista jogadores sem clube disponíveis para contratação
+- Query params:
+  - `position`: Filtra por posição
+  - `min_age`: Idade mínima
+  - `max_age`: Idade máxima
+  - `min_value`: Valor mínimo
+  - `max_value`: Valor máximo
+  - `page`: Página (default: 1)
+  - `limit`: Itens por página (default: 20)
+- Retorna:
+  - Lista de jogadores com dados básicos
+  - Informações de paginação
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/transfer/hire`
+
+- Contrata um jogador sem clube
+- Payload:
+
+```json
+{
+  "player_id": "uuid",
+  "salary": 100000,
+  "contract_years": 3
+}
+```
+
+- Validações:
+  - Jogador deve estar disponível
+  - Salário deve estar dentro dos limites do servidor
+  - Clube deve ter saldo suficiente
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Contrato do jogador
+  - Saldo do clube
+  - Cache do clube e jogador
+
+### POST `/api/transfer/sell`
+
+- Vende um jogador para outro clube
+- Payload:
+
+```json
+{
+  "player_id": "uuid",
+  "price": 1000000,
+  "buyer_club_id": "uuid"
+}
+```
+
+- Validações:
+  - Jogador deve pertencer ao clube vendedor
+  - Clube comprador deve existir
+  - Clube comprador deve ter saldo suficiente
+  - Jogador não pode estar emprestado
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Contrato do jogador
+  - Saldo dos clubes (vendedor e comprador)
+  - Cache dos clubes e jogador
 
 ---
 
@@ -155,6 +215,265 @@
 ### GET `/api/finance/{club_id}`
 
 - Detalha finanças do clube: saldo, teto salarial, gastos, multas previstas
+
+### GET `/api/club/{id}/finance/budget`
+
+- Retorna informações detalhadas do orçamento do clube
+- Inclui:
+  - Orçamento base e bônus
+  - Despesas totais e por categoria
+  - Receitas totais e por categoria
+  - Projeções de receita com ingressos
+  - Saldo atual
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### PUT `/api/club/{id}/finance/budget`
+
+- Atualiza configurações do orçamento do clube
+- Payload:
+  ```json
+  {
+    "season_budget_base": 5000000,
+    "season_budget_bonus": 1000000,
+    "ticket_price": 50,
+    "season_ticket_price": 200
+  }
+  ```
+- Rate Limit: 5 requisições/minuto
+
+### GET `/api/club/{id}/finance/budget/expenses`
+
+- Lista todas as despesas da temporada atual
+- Retorna:
+  ```json
+  {
+    "data": {
+      "expenses": [
+        {
+          "id": "uuid",
+          "amount": 100000,
+          "description": "Manutenção do estádio",
+          "category": "facilities",
+          "created_at": "2024-03-20T10:00:00Z"
+        }
+      ]
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/club/{id}/finance/budget/expenses`
+
+- Registra uma nova despesa
+- Payload:
+  ```json
+  {
+    "amount": 100000,
+    "description": "Manutenção do estádio",
+    "category": "facilities"
+  }
+  ```
+- Validações:
+  - Valor mínimo: 1.000
+  - Descrição: 3-200 caracteres
+  - Categoria: salary, facilities, marketing, other
+  - Clube deve ter saldo suficiente
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Saldo do clube
+  - Cache do clube
+
+### GET `/api/club/{id}/finance/budget/revenues`
+
+- Lista todas as receitas da temporada atual
+- Retorna:
+  ```json
+  {
+    "data": {
+      "revenues": [
+        {
+          "id": "uuid",
+          "amount": 50000,
+          "description": "Venda de ingressos",
+          "category": "ticket_sales",
+          "created_at": "2024-03-20T10:00:00Z"
+        }
+      ]
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/club/{id}/finance/budget/revenues`
+
+- Registra uma nova receita
+- Payload:
+  ```json
+  {
+    "amount": 50000,
+    "description": "Venda de ingressos",
+    "category": "ticket_sales"
+  }
+  ```
+- Validações:
+  - Valor deve ser positivo
+  - Descrição: 3-255 caracteres
+  - Categoria: ticket_sales, merchandise, sponsorship, other
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Saldo do clube
+  - Cache do clube
+
+### GET `/api/club/{id}/finance/penalty`
+
+- Lista todas as multas do clube
+- Retorna:
+  ```json
+  {
+    "data": {
+      "penalties": [
+        {
+          "id": "uuid",
+          "type": "red_card | salary_cap | other",
+          "amount": 100000,
+          "status": "pending | paid | waived",
+          "description": "Descrição da multa",
+          "created_at": "2024-03-20T10:00:00Z",
+          "match_id": "uuid", // opcional
+          "player_id": "uuid" // opcional
+        }
+      ]
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/club/{id}/finance/penalty/pay`
+
+- Processa o pagamento de uma multa
+- Payload:
+  ```json
+  {
+    "penalty_id": "uuid"
+  }
+  ```
+- Retorna:
+  ```json
+  {
+    "message": "Multa paga com sucesso",
+    "data": {
+      "penalty_id": "uuid",
+      "amount": 100000,
+      "new_balance": 900000
+    }
+  }
+  ```
+- Validações:
+  - Multa deve existir e estar pendente
+  - Clube deve ter saldo suficiente
+  - Clube deve ser o dono da multa
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Status da multa para "paid"
+  - Saldo do clube
+  - Cache do clube
+
+### GET `/api/club/{id}/finance/loan`
+
+- Lista todos os empréstimos ativos do clube
+- Retorna:
+  ```json
+  {
+    "data": {
+      "loans": [
+        {
+          "id": "uuid",
+          "amount": 1000000,
+          "interest_rate": 0.1,
+          "total_amount": 1100000,
+          "monthly_payment": 91666.67,
+          "duration_months": 12,
+          "remaining_months": 10,
+          "status": "active",
+          "created_at": "2024-03-20T10:00:00Z"
+        }
+      ]
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/club/{id}/finance/loan`
+
+- Solicita um novo empréstimo
+- Payload:
+  ```json
+  {
+    "amount": 1000000,
+    "duration_months": 12
+  }
+  ```
+- Retorna:
+  ```json
+  {
+    "message": "Empréstimo solicitado com sucesso",
+    "data": {
+      "loan_id": "uuid",
+      "amount": 1000000,
+      "interest_rate": 0.1,
+      "total_amount": 1100000,
+      "monthly_payment": 91666.67,
+      "duration_months": 12
+    }
+  }
+  ```
+- Validações:
+  - Valor mínimo: 100.000
+  - Valor máximo: 10.000.000
+  - Duração mínima: 3 meses
+  - Duração máxima: 12 meses
+  - Clube não pode ter empréstimos ativos
+  - Taxa de juros baseada na reputação do clube
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Saldo do clube
+  - Cache do clube
+
+### POST `/api/club/{id}/finance/loan/pay`
+
+- Paga uma parcela do empréstimo
+- Payload:
+  ```json
+  {
+    "loan_id": "uuid"
+  }
+  ```
+- Retorna:
+  ```json
+  {
+    "message": "Parcela paga com sucesso",
+    "data": {
+      "loan_id": "uuid",
+      "payment": 91666.67,
+      "remaining_months": 9,
+      "new_balance": 908333.33
+    }
+  }
+  ```
+- Validações:
+  - Empréstimo deve existir e estar ativo
+  - Clube deve ter saldo suficiente
+  - Clube deve ser o dono do empréstimo
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Saldo do clube
+  - Status do empréstimo
+  - Cache do clube
 
 ### POST `/api/transfer/request`
 
@@ -185,6 +504,114 @@
 }
 ```
 
+### POST `/api/club/{id}/finance/salary/process`
+
+- Processa o pagamento mensal de salários dos jogadores
+- Retorna:
+  ```json
+  {
+    "message": "Salários processados com sucesso",
+    "data": {
+      "total_salaries": 1000000,
+      "salary_cap": 3500000,
+      "salary_cap_exceeded": false,
+      "penalty_amount": 0,
+      "players_processed": 25
+    }
+  }
+  ```
+- Validações:
+  - Clube deve existir e pertencer ao usuário
+  - Clube deve ter saldo suficiente
+  - Clube deve ter jogadores
+  - Jogadores emprestados não são considerados
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Saldo do clube
+  - Registra despesa de salários
+  - Registra multa por teto salarial (se aplicável)
+  - Cache do clube
+
+### GET `/api/club/{id}/finance/projections`
+
+- Retorna projeções financeiras detalhadas do clube
+- Inclui:
+  - Orçamento atual e projeção para próxima temporada
+  - Despesas e receitas por categoria
+  - Projeções de receita com ingressos e sócios
+  - Projeção de saldo
+  - Métricas do clube (reputação, torcida, etc)
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/club/{id}/finance/auto-revenue`
+
+- Calcula e registra receitas automáticas do clube
+- Inclui:
+  - Receita de ingressos (baseada na ocupação média)
+  - Receita de sócios (baseada no número de sócios)
+  - Receita de merchandising (baseada na torcida)
+  - Receita de patrocínios (baseada na reputação)
+- Validações:
+  - Clube deve existir e pertencer ao usuário
+  - Monetização deve estar habilitada no servidor
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - Saldo do clube
+  - Cache do clube
+
+### GET `/api/club/{id}/finance/report`
+
+- Gera relatório financeiro completo do clube
+- Inclui:
+  - Informações do clube
+  - Orçamento atual
+  - Despesas e receitas detalhadas
+  - Multas e empréstimos
+  - Salários dos jogadores
+  - Projeções financeiras
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/club/{id}/players/evolution`
+
+- Processa a evolução dos jogadores do clube
+- Retorna:
+  ```json
+  {
+    "message": "Evolução dos jogadores processada com sucesso",
+    "data": {
+      "players_processed": 25,
+      "players": [
+        {
+          "id": "uuid",
+          "level": 5,
+          "xp": 4500,
+          "attributes": {
+            "pace": 85,
+            "shooting": 82,
+            "passing": 78,
+            "dribbling": 80,
+            "defending": 45,
+            "physical": 75
+          },
+          "new_value": 2500000
+        }
+      ]
+    }
+  }
+  ```
+- Validações:
+  - Clube deve existir e pertencer ao usuário
+  - Clube deve ter jogadores
+  - Jogadores emprestados não são considerados
+- Rate Limit: 5 requisições/minuto
+- Atualiza:
+  - XP e nível dos jogadores
+  - Atributos baseados na posição
+  - Valor de mercado
+  - Cache do clube
+
 ---
 
 ## 🏆 Competições
@@ -200,6 +627,546 @@
 ### GET `/api/competitions/{id}/rewards`
 
 - Premiações por posição, artilheiro, assistências, etc
+
+### Competições
+
+#### POST /api/admin/competitions
+
+Cria uma nova competição no servidor. Apenas administradores podem criar competições.
+
+**Rate Limit:** 5 requisições por minuto
+
+**Headers necessários:**
+
+- `user-id`: ID do usuário administrador
+
+**Payload:**
+
+```json
+{
+  "server_id": "uuid",
+  "name": "string",
+  "type": "league" | "cup" | "elite",
+  "season": number,
+  "points_win": number, // opcional, padrão: 3
+  "points_draw": number, // opcional, padrão: 1
+  "tie_break_order": string[], // opcional
+  "reward_schema": {
+    "positions": {
+      "1": number,
+      "2": number,
+      // ... outras posições
+    },
+    "top_scorer": number, // opcional
+    "top_assister": number // opcional
+  },
+  "red_card_penalty": number, // opcional, padrão: 50000
+  "club_ids": ["uuid", "uuid", ...] // mínimo 2 clubes
+}
+```
+
+**Resposta de sucesso (200):**
+
+```json
+{
+  "message": "Competição criada com sucesso",
+  "data": {
+    "competition": {
+      "id": "uuid",
+      "name": "string",
+      "type": "string",
+      "season": number,
+      "club_count": number
+    }
+  }
+}
+```
+
+**Possíveis erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `SERVER_NOT_FOUND`: Servidor não encontrado
+- `INVALID_SEASON`: Temporada não corresponde à do servidor
+- `CLUBS_NOT_FOUND`: Um ou mais clubes não encontrados
+- `INVALID_CLUB_SERVER`: Um ou mais clubes não pertencem ao servidor
+- `COMPETITION_CREATE_FAILED`: Erro ao criar competição
+- `COMPETITION_CLUBS_INSERT_FAILED`: Erro ao adicionar clubes à competição
+
+### Playoffs
+
+#### GET /api/admin/competitions/{id}/playoffs
+
+Lista todos os playoffs de uma competição.
+
+**Headers necessários:**
+
+- `user-id`: ID do administrador
+
+**Resposta de sucesso (HTTP 200):**
+
+```json
+{
+  "data": {
+    "playoffs": [
+      {
+        "id": "uuid",
+        "competition_id": "uuid",
+        "season": 1,
+        "status": "pending | in_progress | completed",
+        "start_date": "2024-03-22T10:00:00Z",
+        "end_date": "2024-03-22T10:00:00Z",
+        "qualified_clubs": [
+          {
+            "club_id": "uuid",
+            "position": 1
+          }
+        ],
+        "bracket": {
+          "rounds": [
+            {
+              "round": 1,
+              "matches": [
+                {
+                  "match_number": 1
+                }
+              ]
+            }
+          ]
+        },
+        "matches": [
+          {
+            "id": "uuid",
+            "round": 1,
+            "match_number": 1,
+            "home_club_id": "uuid",
+            "away_club_id": "uuid",
+            "home_goals": 2,
+            "away_goals": 1,
+            "status": "completed",
+            "scheduled_at": "2024-03-22T10:00:00Z",
+            "match_stats": {
+              "possession": {
+                "home": 55,
+                "away": 45
+              }
+            },
+            "home_club": {
+              "id": "uuid",
+              "name": "Time A",
+              "logo_url": "https://exemplo.com/logo.png"
+            },
+            "away_club": {
+              "id": "uuid",
+              "name": "Time B",
+              "logo_url": "https://exemplo.com/logo.png"
+            }
+          }
+        ],
+        "competition": {
+          "id": "uuid",
+          "name": "Liga Principal",
+          "type": "league",
+          "season": 1
+        }
+      }
+    ]
+  }
+}
+```
+
+**Possíveis erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `PLAYOFFS_FETCH_FAILED`: Erro ao buscar playoffs
+- `MATCHES_FETCH_FAILED`: Erro ao buscar partidas
+
+**Limite de taxa:** 30 requisições por minuto
+
+#### POST /api/admin/competitions/{id}/playoffs
+
+Gera os playoffs para uma competição.
+
+**Headers necessários:**
+
+- `user-id`: ID do administrador
+
+**Payload:**
+
+```json
+{
+  "top_teams": 8 // opcional, padrão: 8
+}
+```
+
+**Resposta de sucesso (HTTP 200):**
+
+```json
+{
+  "message": "Playoffs gerados com sucesso",
+  "data": {
+    "playoff": {
+      "id": "uuid",
+      "competition_id": "uuid",
+      "season": 1,
+      "status": "pending",
+      "qualified_clubs": [
+        {
+          "club_id": "uuid",
+          "position": 1
+        }
+      ],
+      "bracket": {
+        "rounds": [
+          {
+            "round": 1,
+            "matches": [
+              {
+                "match_number": 1
+              }
+            ]
+          }
+        ]
+      },
+      "matches": [
+        {
+          "id": "uuid",
+          "round": 1,
+          "match_number": 1,
+          "home_club_id": "uuid",
+          "away_club_id": "uuid",
+          "status": "scheduled",
+          "scheduled_at": "2024-03-22T10:00:00Z",
+          "home_club": {
+            "id": "uuid",
+            "name": "Time A",
+            "logo_url": "https://exemplo.com/logo.png"
+          },
+          "away_club": {
+            "id": "uuid",
+            "name": "Time B",
+            "logo_url": "https://exemplo.com/logo.png"
+          }
+        }
+      ],
+      "competition": {
+        "id": "uuid",
+        "name": "Liga Principal",
+        "type": "league",
+        "season": 1
+      }
+    }
+  }
+}
+```
+
+**Possíveis erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `COMPETITION_NOT_FOUND`: Competição não encontrada
+- `PLAYOFF_ALREADY_EXISTS`: Playoffs já existem para esta temporada
+- `INVALID_DATA`: Número de times inválido
+- `PLAYOFF_GENERATION_FAILED`: Erro ao gerar playoffs
+- `PLAYOFF_FETCH_FAILED`: Erro ao buscar playoffs
+- `MATCHES_FETCH_FAILED`: Erro ao buscar partidas
+
+**Limite de taxa:** 5 requisições por minuto
+
+#### POST /api/admin/playoffs/matches/{id}/score
+
+Registra o resultado de uma partida dos playoffs.
+
+**Headers necessários:**
+
+- `user-id`: ID do administrador
+
+**Payload:**
+
+```json
+{
+  "home_goals": 2,
+  "away_goals": 1,
+  "match_stats": {
+    "possession": {
+      "home": 55,
+      "away": 45
+    },
+    "shots": {
+      "home": 12,
+      "away": 8
+    },
+    "shots_on_target": {
+      "home": 5,
+      "away": 3
+    },
+    "corners": {
+      "home": 6,
+      "away": 4
+    },
+    "fouls": {
+      "home": 8,
+      "away": 10
+    }
+  }
+}
+```
+
+**Resposta de sucesso (HTTP 200):**
+
+```json
+{
+  "message": "Resultado processado com sucesso",
+  "data": {
+    "match_id": "uuid",
+    "home_goals": 2,
+    "away_goals": 1,
+    "match_stats": {
+      // Estatísticas da partida
+    }
+  }
+}
+```
+
+**Possíveis erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `MATCH_NOT_FOUND`: Partida não encontrada
+- `MATCH_ALREADY_COMPLETED`: Partida já está concluída
+- `INVALID_DATA`: Placar inválido
+- `MATCH_PROCESSING_FAILED`: Erro ao processar resultado
+
+**Limite de taxa:** 5 requisições por minuto
+
+**Atualizações:**
+
+- Status da partida
+- Gols marcados e sofridos
+- Estatísticas da partida
+- Próxima partida do bracket (se aplicável)
+- Status dos playoffs (se for a final)
+- Cache da partida e dos playoffs
+
+### Divisões
+
+#### Listar Divisões
+
+**GET /api/admin/divisions**
+
+Lista todas as divisões de um servidor.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+- `server-id`: ID do servidor
+
+**Query Parameters:**
+
+- `season`: Temporada (opcional)
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "divisions": [
+      {
+        "id": "uuid",
+        "server_id": "uuid",
+        "name": "string",
+        "level": "integer",
+        "promotion_spots": "integer",
+        "relegation_spots": "integer",
+        "created_at": "timestamp",
+        "updated_at": "timestamp"
+      }
+    ]
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `SERVER_NOT_FOUND`: Servidor não encontrado
+
+### Criar Divisão
+
+**POST /api/admin/divisions**
+
+Cria uma nova divisão.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+- `server-id`: ID do servidor
+
+**Payload:**
+
+```json
+{
+  "name": "string",
+  "level": "integer",
+  "promotion_spots": "integer",
+  "relegation_spots": "integer"
+}
+```
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "division": {
+      "id": "uuid",
+      "server_id": "uuid",
+      "name": "string",
+      "level": "integer",
+      "promotion_spots": "integer",
+      "relegation_spots": "integer",
+      "created_at": "timestamp",
+      "updated_at": "timestamp"
+    }
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `SERVER_NOT_FOUND`: Servidor não encontrado
+- `INVALID_LEVEL`: Nível de divisão inválido
+- `DIVISION_CREATE_FAILED`: Falha ao criar divisão
+
+### Processar Promoções e Rebaixamentos
+
+**POST /api/admin/divisions/process**
+
+Processa as promoções e rebaixamentos entre divisões.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+
+**Payload:**
+
+```json
+{
+  "server_id": "uuid"
+}
+```
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "promotions": [
+      {
+        "club_id": "uuid",
+        "from_division_id": "uuid",
+        "to_division_id": "uuid",
+        "type": "string"
+      }
+    ],
+    "relegations": [
+      {
+        "club_id": "uuid",
+        "from_division_id": "uuid",
+        "to_division_id": "uuid",
+        "type": "string"
+      }
+    ]
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `SERVER_NOT_FOUND`: Servidor não encontrado
+- `PROCESS_FAILED`: Falha ao processar promoções/rebaixamentos
+
+### Histórico de Promoções e Rebaixamentos
+
+**GET /api/admin/divisions/history**
+
+Retorna o histórico de promoções e rebaixamentos.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+- `server-id`: ID do servidor
+
+**Query Parameters:**
+
+- `season`: Temporada (opcional)
+- `club_id`: ID do clube (opcional)
+- `type`: Tipo do movimento ('promotion' ou 'relegation') (opcional)
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "success": true,
+  "data": {
+    "history": [
+      {
+        "id": "uuid",
+        "server_id": "uuid",
+        "club_id": "uuid",
+        "season": "integer",
+        "from_division_id": "uuid",
+        "to_division_id": "uuid",
+        "type": "string",
+        "created_at": "timestamp"
+      }
+    ]
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `SERVER_NOT_FOUND`: Servidor não encontrado
+
+### Distribuir Premiações
+
+`POST /api/admin/competitions/:id/rewards`
+
+Distribui as premiações para os clubes e jogadores de uma competição finalizada.
+
+#### Headers
+
+| Nome    | Tipo   | Descrição           |
+| ------- | ------ | ------------------- |
+| user-id | string | ID do usuário admin |
+
+#### Resposta de Sucesso
+
+```json
+{
+  "success": true
+}
+```
+
+#### Possíveis Erros
+
+- `UNAUTHORIZED`: Usuário não autenticado ou não é admin
+- `COMPETITION_NOT_FOUND`: Competição não encontrada
+- `COMPETITION_NOT_COMPLETED`: A competição precisa estar finalizada
+- `REWARDS_ALREADY_PROCESSED`: As premiações já foram processadas
+- `SERVER_ERROR`: Erro interno do servidor
 
 ---
 
@@ -224,3 +1191,286 @@
 ### GET `/api/admin/logs/{server_id}`
 
 - Logs do servidor: simulações, negociações, punições, etc
+
+## Gerenciamento de Partidas
+
+### Listar Partidas
+
+`GET /api/admin/matches`
+
+Lista todas as partidas do servidor, com opções de filtro.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+
+**Query Parameters:**
+
+- `competition_id` (opcional): Filtrar por competição
+- `status` (opcional): Filtrar por status (scheduled, in_progress, completed, cancelled)
+- `round` (opcional): Filtrar por rodada
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "data": {
+    "matches": [
+      {
+        "id": "string",
+        "competition_id": "string",
+        "home_club_id": "string",
+        "away_club_id": "string",
+        "scheduled_at": "string",
+        "status": "string",
+        "home_goals": "number",
+        "away_goals": "number",
+        "round": "number",
+        "competition": {
+          "id": "string",
+          "name": "string",
+          "type": "string",
+          "season": "number"
+        },
+        "home_club": {
+          "id": "string",
+          "name": "string",
+          "logo_url": "string",
+          "city": "string",
+          "country": "string"
+        },
+        "away_club": {
+          "id": "string",
+          "name": "string",
+          "logo_url": "string",
+          "city": "string",
+          "country": "string"
+        }
+      }
+    ]
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+
+### Obter Detalhes da Partida
+
+`GET /api/admin/matches/{id}`
+
+Obtém os detalhes completos de uma partida específica.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "data": {
+    "match": {
+      "id": "string",
+      "competition_id": "string",
+      "home_club_id": "string",
+      "away_club_id": "string",
+      "scheduled_at": "string",
+      "status": "string",
+      "home_goals": "number",
+      "away_goals": "number",
+      "round": "number",
+      "home_formation": "string",
+      "away_formation": "string",
+      "home_lineup": "object",
+      "away_lineup": "object",
+      "match_stats": "object",
+      "highlights": "array",
+      "events": "array",
+      "competition": {
+        "id": "string",
+        "name": "string",
+        "type": "string",
+        "season": "number",
+        "server_id": "string"
+      },
+      "home_club": {
+        "id": "string",
+        "name": "string",
+        "logo_url": "string",
+        "city": "string",
+        "country": "string"
+      },
+      "away_club": {
+        "id": "string",
+        "name": "string",
+        "logo_url": "string",
+        "city": "string",
+        "country": "string"
+      }
+    }
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `MATCH_NOT_FOUND`: Partida não encontrada
+
+### Atualizar Partida
+
+`PUT /api/admin/matches/{id}`
+
+Atualiza os detalhes de uma partida específica.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+
+**Payload:**
+
+```json
+{
+  "status": "string", // scheduled, in_progress, completed, cancelled
+  "home_goals": "number",
+  "away_goals": "number",
+  "home_formation": "string",
+  "away_formation": "string",
+  "home_lineup": "object",
+  "away_lineup": "object",
+  "match_stats": "object",
+  "highlights": "array",
+  "events": "array"
+}
+```
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "message": "Partida atualizada com sucesso",
+  "data": {
+    "match": {
+      // Dados atualizados da partida
+    }
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `MATCH_NOT_FOUND`: Partida não encontrada
+- `MATCH_UPDATE_FAILED`: Erro ao atualizar partida
+- `INVALID_DATA`: Dados inválidos no payload
+
+### Excluir Partida
+
+`DELETE /api/admin/matches/{id}`
+
+Exclui uma partida específica. Não é possível excluir partidas já concluídas.
+
+**Headers:**
+
+- `user-id`: ID do usuário administrador
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "message": "Partida excluída com sucesso"
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `MATCH_NOT_FOUND`: Partida não encontrada
+- `MATCH_ALREADY_COMPLETED`: Não é possível excluir uma partida já concluída
+- `MATCH_DELETE_FAILED`: Erro ao excluir partida
+
+### Pontuação de Partidas
+
+#### POST /api/admin/matches/{id}/score
+
+Registra a pontuação de uma partida e atualiza a classificação da competição.
+
+**Headers necessários:**
+
+- `user-id`: ID do administrador
+
+**Payload:**
+
+```json
+{
+  "home_goals": 2,
+  "away_goals": 1,
+  "match_stats": {
+    "possession": {
+      "home": 55,
+      "away": 45
+    },
+    "shots": {
+      "home": 12,
+      "away": 8
+    },
+    "shots_on_target": {
+      "home": 5,
+      "away": 3
+    },
+    "corners": {
+      "home": 6,
+      "away": 4
+    },
+    "fouls": {
+      "home": 8,
+      "away": 10
+    }
+  }
+}
+```
+
+**Resposta de sucesso (HTTP 200):**
+
+```json
+{
+  "message": "Pontuação registrada com sucesso",
+  "data": {
+    "match_id": "uuid",
+    "home_goals": 2,
+    "away_goals": 1,
+    "home_points": 3,
+    "away_points": 0,
+    "match_stats": {
+      // Estatísticas da partida
+    }
+  }
+}
+```
+
+**Possíveis erros:**
+
+- `UNAUTHORIZED`: Usuário não autenticado
+- `FORBIDDEN`: Usuário não é administrador
+- `MATCH_NOT_FOUND`: Partida não encontrada
+- `MATCH_ALREADY_COMPLETED`: Partida já está concluída
+- `INVALID_GOALS`: Número de gols inválido
+- `SCORE_PROCESSING_FAILED`: Erro ao processar pontuação
+
+**Limite de taxa:** 5 requisições por minuto
+
+**Atualizações:**
+
+- Status da partida
+- Gols marcados e sofridos
+- Estatísticas da partida
+- Pontos na classificação
+- Vitórias, empates e derrotas
+- Gols marcados e sofridos na classificação
+- Cache da partida e da classificação

@@ -280,3 +280,144 @@
 - data (jsonb)
 - read (boolean)
 - created_at (timestamp)
+
+## Tabelas de Finanças
+
+### financial_transactions
+
+Registra todas as transações financeiras dos clubes.
+
+| Campo            | Tipo      | Descrição                                 |
+| ---------------- | --------- | ----------------------------------------- |
+| id               | UUID      | Identificador único da transação          |
+| club_id          | UUID      | ID do clube (referência à tabela clubs)   |
+| type             | TEXT      | Tipo da transação ('income' ou 'expense') |
+| category         | TEXT      | Categoria da transação                    |
+| amount           | DECIMAL   | Valor da transação                        |
+| description      | TEXT      | Descrição opcional da transação           |
+| transaction_date | TIMESTAMP | Data da transação                         |
+| created_at       | TIMESTAMP | Data de criação do registro               |
+| updated_at       | TIMESTAMP | Data da última atualização                |
+
+### player_salaries
+
+Gerencia os salários dos jogadores.
+
+| Campo            | Tipo      | Descrição                                          |
+| ---------------- | --------- | -------------------------------------------------- |
+| id               | UUID      | Identificador único do registro de salário         |
+| player_id        | UUID      | ID do jogador (referência à tabela server_players) |
+| club_id          | UUID      | ID do clube (referência à tabela clubs)            |
+| base_salary      | DECIMAL   | Salário base do jogador                            |
+| bonus_percentage | DECIMAL   | Percentual de bônus por desempenho                 |
+| start_date       | TIMESTAMP | Data de início do contrato                         |
+| end_date         | TIMESTAMP | Data de término do contrato                        |
+| is_active        | BOOLEAN   | Indica se o contrato está ativo                    |
+| created_at       | TIMESTAMP | Data de criação do registro                        |
+| updated_at       | TIMESTAMP | Data da última atualização                         |
+
+### club_revenues
+
+Controla as receitas dos clubes por temporada.
+
+| Campo                  | Tipo      | Descrição                                   |
+| ---------------------- | --------- | ------------------------------------------- |
+| id                     | UUID      | Identificador único do registro de receitas |
+| club_id                | UUID      | ID do clube (referência à tabela clubs)     |
+| season                 | INTEGER   | Temporada                                   |
+| match_day_revenue      | DECIMAL   | Receita com ingressos de jogos              |
+| season_tickets_revenue | DECIMAL   | Receita com ingressos de temporada          |
+| sponsorship_revenue    | DECIMAL   | Receita com patrocínios                     |
+| merchandise_revenue    | DECIMAL   | Receita com merchandising                   |
+| transfer_revenue       | DECIMAL   | Receita com transferências                  |
+| other_revenue          | DECIMAL   | Outras receitas                             |
+| total_revenue          | DECIMAL   | Total de receitas                           |
+| created_at             | TIMESTAMP | Data de criação do registro                 |
+| updated_at             | TIMESTAMP | Data da última atualização                  |
+
+### club_expenses
+
+Controla as despesas dos clubes por temporada.
+
+| Campo               | Tipo      | Descrição                                   |
+| ------------------- | --------- | ------------------------------------------- |
+| id                  | UUID      | Identificador único do registro de despesas |
+| club_id             | UUID      | ID do clube (referência à tabela clubs)     |
+| season              | INTEGER   | Temporada                                   |
+| wages_expense       | DECIMAL   | Despesa com salários                        |
+| facilities_expense  | DECIMAL   | Despesa com instalações                     |
+| maintenance_expense | DECIMAL   | Despesa com manutenção                      |
+| marketing_expense   | DECIMAL   | Despesa com marketing                       |
+| transfer_expense    | DECIMAL   | Despesa com transferências                  |
+| other_expense       | DECIMAL   | Outras despesas                             |
+| total_expense       | DECIMAL   | Total de despesas                           |
+| created_at          | TIMESTAMP | Data de criação do registro                 |
+| updated_at          | TIMESTAMP | Data da última atualização                  |
+
+## Tabelas de Playoffs
+
+### playoffs
+
+Gerencia os playoffs do servidor.
+
+| Campo      | Tipo      | Descrição                                                 |
+| ---------- | --------- | --------------------------------------------------------- |
+| id         | UUID      | Identificador único do playoff                            |
+| server_id  | UUID      | ID do servidor (referência à tabela servers)              |
+| season     | INTEGER   | Temporada                                                 |
+| status     | TEXT      | Status do playoff ('pending', 'in_progress', 'completed') |
+| start_date | TIMESTAMP | Data de início                                            |
+| end_date   | TIMESTAMP | Data de término                                           |
+| created_at | TIMESTAMP | Data de criação do registro                               |
+| updated_at | TIMESTAMP | Data da última atualização                                |
+
+### playoff_matches
+
+Gerencia as partidas dos playoffs.
+
+| Campo        | Tipo      | Descrição                                                   |
+| ------------ | --------- | ----------------------------------------------------------- |
+| id           | UUID      | Identificador único da partida                              |
+| playoff_id   | UUID      | ID do playoff (referência à tabela playoffs)                |
+| round        | INTEGER   | Rodada do playoff                                           |
+| home_club_id | UUID      | ID do clube mandante (referência à tabela clubs)            |
+| away_club_id | UUID      | ID do clube visitante (referência à tabela clubs)           |
+| home_score   | INTEGER   | Placar do mandante                                          |
+| away_score   | INTEGER   | Placar do visitante                                         |
+| match_date   | TIMESTAMP | Data da partida                                             |
+| status       | TEXT      | Status da partida ('scheduled', 'in_progress', 'completed') |
+| winner_id    | UUID      | ID do clube vencedor (referência à tabela clubs)            |
+| created_at   | TIMESTAMP | Data de criação do registro                                 |
+| updated_at   | TIMESTAMP | Data da última atualização                                  |
+
+### Tabelas de Divisões
+
+#### divisions
+
+Gerencia as divisões dos clubes.
+
+| Campo            | Tipo      | Descrição                               |
+| ---------------- | --------- | --------------------------------------- |
+| id               | uuid      | ID único da divisão                     |
+| server_id        | uuid      | ID do servidor                          |
+| name             | varchar   | Nome da divisão                         |
+| level            | integer   | Nível da divisão (1 = primeira divisão) |
+| promotion_spots  | integer   | Número de vagas para promoção           |
+| relegation_spots | integer   | Número de vagas para rebaixamento       |
+| created_at       | timestamp | Data de criação                         |
+| updated_at       | timestamp | Data de atualização                     |
+
+#### promotion_relegation_history
+
+Registra o histórico de promoções e rebaixamentos.
+
+| Campo            | Tipo      | Descrição                                       |
+| ---------------- | --------- | ----------------------------------------------- |
+| id               | uuid      | ID único do registro                            |
+| server_id        | uuid      | ID do servidor                                  |
+| club_id          | uuid      | ID do clube                                     |
+| season           | integer   | Temporada                                       |
+| from_division_id | uuid      | ID da divisão de origem                         |
+| to_division_id   | uuid      | ID da divisão de destino                        |
+| type             | varchar   | Tipo do movimento ('promotion' ou 'relegation') |
+| created_at       | timestamp | Data de criação                                 |

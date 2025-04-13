@@ -60,6 +60,28 @@
   - Painel gerencial (criação de servidores, logs, reset de temporada)
   - API intermediária para o app
 
+## 🏁 MVP – Entregáveis Finais
+
+1. **Funcionalidades Básicas**
+
+   - Login + entrada no servidor
+   - Criação de clube com jogadores
+   - Temporada com liga e copa
+   - Sistema de táticas + evolução
+   - Transferências com janelas
+   - Encerramento com premiações e multas
+
+2. **Painel Administrativo**
+
+   - Interface funcional
+   - Sistema de logs
+   - Controle de temporada
+
+3. **Interface do Jogador**
+   - App responsivo e PWA
+   - Navegação intuitiva
+   - Sistema de notificações
+
 ## 🗺️ ROADMAP DETALHADO
 
 ### 📁 FASE 1: Setup do Projeto e Infraestrutura Base
@@ -103,25 +125,53 @@
 
 - [x] Implementar endpoints de clube:
   - [x] Criação de clube (com validações e valores iniciais)
-  - [ ] Gerenciamento de elenco
+  - [x] Gerenciamento de elenco (contratação de jogadores livres)
   - [x] Sistema de táticas (formação, escalação, capitão)
-  - [ ] Finanças do clube
-- [ ] Desenvolver lógica de negócio:
-  - [ ] Cálculo de salários
-  - [ ] Gestão de orçamento
-  - [ ] Evolução de jogadores
+  - [x] Finanças do clube
+    - [x] Cálculo de Salários
+    - [x] Processamento mensal
+    - [x] Verificação de teto salarial
+    - [x] Multas automáticas
+    - [x] Bônus por desempenho
+  - [x] Sistema de multas (cartões vermelhos, teto salarial)
+    - [x] Registro de multas
+    - [x] Cálculo automático de valores
+    - [x] Notificações para clubes
+    - [x] Pagamento de multas
+  - [x] Sistema de Empréstimos
+    - [x] Registro de empréstimos
+    - [x] Controle de pagamentos
+    - [x] Histórico de transações
+  - [x] Gestão de orçamento
+    - [x] Registro de despesas
+    - [x] Registro de receitas
+    - [x] Acompanhamento de saldo
+    - [x] Projeções financeiras
+    - [x] Cálculo automático de receitas
+    - [x] Relatórios financeiros
+- [x] Evolução de jogadores
+  - [x] Sistema de XP
+  - [x] Evolução de atributos
+  - [x] Bônus de performance
+  - [x] Atualização de valores de mercado
 
 #### 2.3 Sistema de Competições
 
-- [ ] Implementar endpoints de competições:
-  - [ ] Criação de ligas
-  - [ ] Geração de calendário
-  - [ ] Sistema de partidas
-  - [ ] Classificação
-- [ ] Desenvolver lógica de simulação:
-  - [ ] Motor de partidas
-  - [ ] Sistema de eventos
-  - [ ] Estatísticas
+- [x] Criação de competições
+- [x] Gerenciamento de partidas
+- [x] Sistema de pontuação
+- [x] Classificação
+- [x] Playoffs
+  - [x] Criação de playoffs
+  - [x] Gerenciamento de partidas
+  - [x] Registro de resultados
+  - [x] Atualização automática de rankings
+  - [x] Histórico de campeões
+- [x] Sistema de rebaixamento
+  - [x] Criação de divisões
+  - [x] Processamento de promoções/rebaixamentos
+  - [x] Histórico de movimentações
+- [x] Sistema de premiações
 
 ### 💻 FASE 3: Desenvolvimento do Admin
 
@@ -244,25 +294,3 @@
   - [ ] Alertas
   - [ ] Métricas
   - [ ] Analytics
-
-## 🏁 MVP – Entregáveis Finais
-
-1. **Funcionalidades Básicas**
-
-   - Login + entrada no servidor
-   - Criação de clube com jogadores
-   - Temporada com liga e copa
-   - Sistema de táticas + evolução
-   - Transferências com janelas
-   - Encerramento com premiações e multas
-
-2. **Painel Administrativo**
-
-   - Interface funcional
-   - Sistema de logs
-   - Controle de temporada
-
-3. **Interface do Jogador**
-   - App responsivo e PWA
-   - Navegação intuitiva
-   - Sistema de notificações
