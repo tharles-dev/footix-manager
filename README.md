@@ -66,24 +66,24 @@
 
 #### 1.1 Setup do Projeto Next.js
 
-- [ ] Inicializar projeto Next.js 14
-- [ ] Configurar TypeScript
-- [ ] Configurar ESLint e Prettier
-- [ ] Configurar Tailwind CSS v3
-- [ ] Criar estrutura de pastas:
-  - [ ] `/app` para rotas e páginas
-  - [ ] `/components` para componentes reutilizáveis
-  - [ ] `/lib` para utilitários e configurações
+- [x] Inicializar projeto Next.js 14
+- [x] Configurar TypeScript
+- [x] Configurar ESLint e Prettier
+- [x] Configurar Tailwind CSS v3
+- [x] Criar estrutura de pastas:
+  - [x] `/app` para rotas e páginas
+  - [x] `/components` para componentes reutilizáveis
+  - [x] `/lib` para utilitários e configurações
 
 #### 1.2 Configuração do Supabase
 
-- [ ] Criar projeto no Supabase
-- [ ] Configurar autenticação Google
-- [ ] Criar estrutura inicial do banco de dados
-  - [ ] Tabelas base (users, servers, clubs)
-  - [ ] Políticas de segurança (RLS)
-  - [ ] Funções e triggers básicos
-- [ ] Configurar storage para logos e imagens
+- [x] Criar projeto no Supabase
+- [x] Configurar autenticação Google
+- [x] Criar estrutura inicial do banco de dados
+  - [x] Tabelas base (users, servers, clubs)
+  - [x] Políticas de segurança (RLS)
+  - [x] Funções e triggers básicos
+- [x] Configurar storage para logos e imagens (usando URLs externas)
 
 ### 🖥️ FASE 2: Desenvolvimento do Backend
 
