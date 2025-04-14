@@ -182,9 +182,9 @@
 - [x] Implementar layout administrativo:
   - [x] Sidebar responsiva
   - [x] Header com ações
-  - [ ] Sistema de navegação
-- [ ] Criar componentes base:
-  - [ ] Tabelas de dados
+  - [x] Sistema de navegação
+- [x] Criar componentes base:
+  - [x] Tabelas de dados
   - [ ] Formulários
   - [ ] Cards e métricas
   - [ ] Gráficos e visualizações
@@ -193,12 +193,12 @@
 
 - [ ] Implementar páginas de administração:
   - [ ] Dashboard com métricas
-  - [ ] Gerenciamento de servidores
+  - [x] Gerenciamento de servidores
   - [ ] Controle de temporada
   - [ ] Logs e monitoramento
   - [ ] Gerenciamento de usuários
-- [ ] Desenvolver funcionalidades:
-  - [ ] CRUD de servidores
+- [x] Desenvolver funcionalidades:
+  - [x] CRUD de servidores
   - [ ] Configurações de simulação
   - [ ] Controle de temporada
   - [ ] Sistema de logs
