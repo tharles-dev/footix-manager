@@ -167,8 +167,11 @@ export async function GET(
       });
     }
 
-    // Cache por 5 minutos
-    await setCachedData(`club:${params.id}:players`, players, 300);
+    // Só armazena em cache se houver jogadores
+    if (players && players.length > 0) {
+      // Cache por 5 minutos
+      await setCachedData(`club:${params.id}:players`, players, 300);
+    }
 
     return NextResponse.json(players);
   } catch (error) {

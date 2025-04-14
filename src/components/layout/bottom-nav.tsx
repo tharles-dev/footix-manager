@@ -13,27 +13,27 @@ import {
 
 const routes = [
   {
-    href: "/dashboard",
+    href: "/web/dashboard",
     label: "Dashboard",
     icon: LayoutDashboard,
   },
   {
-    href: "/competitions",
+    href: "/web/competitions",
     label: "Campeonatos",
     icon: Trophy,
   },
   {
-    href: "/transfers",
+    href: "/web/transfers",
     label: "Negociações",
     icon: BadgeDollarSign,
   },
   {
-    href: "/auctions",
+    href: "/web/auctions",
     label: "Leilões",
     icon: Gavel,
   },
   {
-    href: "/menu",
+    href: "/web/menu",
     label: "Menu",
     icon: Menu,
   },
