@@ -2,6 +2,40 @@
 
 ## 👤 Auth & Users
 
+### POST `/api/auth/google`
+
+- Login com Google via Supabase Auth
+- Redireciona automaticamente para a página apropriada (admin ou web) após autenticação bem-sucedida
+- O fluxo de autenticação é gerenciado pelo Supabase Auth
+
+**Fluxo:**
+
+1. Cliente chama o endpoint
+2. Supabase redireciona para tela de login do Google
+3. Após login bem-sucedido, redireciona automaticamente para:
+   - `/admin` se o usuário tem role "admin"
+   - `/web` se o usuário tem role "user"
+
+**Resposta de Sucesso (200):**
+
+```json
+{
+  "data": {
+    "authenticated": true,
+    "user": {
+      "id": "uuid",
+      "email": "string",
+      "role": "string"
+    }
+  }
+}
+```
+
+**Possíveis Erros:**
+
+- `UNAUTHORIZED`: Falha na autenticação com Google
+- `SERVER_ERROR`: Erro interno do servidor
+
 ### POST `/api/auth/login`
 
 - Login com token do Supabase
