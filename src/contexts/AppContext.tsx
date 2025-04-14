@@ -33,6 +33,8 @@ export interface Club {
   division: string;
   reputation: number;
   fan_base: number;
+  season_budget_base: number;
+  season_expenses: number;
 }
 
 interface AppContextType {

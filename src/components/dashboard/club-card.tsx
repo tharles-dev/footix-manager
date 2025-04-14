@@ -51,18 +51,18 @@ export function ClubCard({
 
         <div className="space-y-4">
           <div>
-            <p className="text-sm text-muted-foreground">DINHEIRO</p>
+            <p className="text-sm text-muted-foreground">ORÇAMENTO</p>
             <p className="text-xl font-bold">{formatCurrency(balance)}</p>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-muted-foreground">LANCES</p>
-              <p className="font-semibold">{formatCurrency(bids)}</p>
+              <p className="text-sm text-muted-foreground">SALÁRIO</p>
+              <p className="font-semibold">{formatCurrency(sponsorship)}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground">PATROCÍNIO</p>
-              <p className="font-semibold">{formatCurrency(sponsorship)}</p>
+              <p className="text-sm text-muted-foreground">SALDO DISPONÍVEL</p>
+              <p className="font-semibold">{formatCurrency(bids)}</p>
             </div>
           </div>
         </div>
