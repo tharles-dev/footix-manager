@@ -40,7 +40,23 @@ export async function PUT(
     // Verifica se todos os jogadores pertencem ao clube
     const { data: players } = await supabase
       .from("server_players")
-      .select("id")
+      .select(
+        `
+        id,
+        name,
+        position,
+        overall,
+        potential,
+        pace,
+        shooting,
+        passing,
+        dribbling,
+        defending,
+        physical,
+        morale,
+        form
+      `
+      )
       .eq("club_id", params.id)
       .in("id", [...data.starting_ids, ...data.bench_ids]);
 

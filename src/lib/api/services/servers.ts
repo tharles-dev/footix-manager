@@ -4,6 +4,16 @@ export type Server = {
   id: string;
   name: string;
   max_members: number;
+  current_members: number;
+  season_length_days: number;
+  entry_mode: "public" | "private";
+  registration_deadline?: string;
+  current_season_start?: string;
+  current_season_end?: string;
+  registration_start?: string;
+  transfer_window_open: boolean;
+  transfer_window_start?: string;
+  transfer_window_end?: string;
   initial_budget: number;
   budget_growth_per_season: number;
   salary_cap: number;
@@ -16,6 +26,9 @@ export type Server = {
   enable_monetization: boolean;
   match_frequency_minutes: number;
   enable_auto_simulation: boolean;
+  red_card_penalty: number;
+  allow_penalty_waiver: boolean;
+  players_source?: string;
   created_at: string;
   updated_at: string;
 };
@@ -46,8 +59,8 @@ export class ServersService extends ApiService {
   }
 
   async getById(id: string): Promise<Server> {
-    const response = await this.get<Server>(this.endpoint, { id });
-    return response.data;
+    const response = await this.get<Server[]>(this.endpoint, { id });
+    return response.data[0];
   }
 
   async create(payload: CreateServerPayload): Promise<Server> {

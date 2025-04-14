@@ -7,9 +7,11 @@ import { z } from "zod";
 const createServerSchema = z.object({
   name: z.string().min(3).max(50),
   max_members: z.number().int().min(2).max(64),
+  season_length_days: z.number().int().min(30).max(90),
+  entry_mode: z.enum(["public", "private"]),
   initial_budget: z.number().min(1000000),
   budget_growth_per_season: z.number().min(0).max(1),
-  salary_cap: z.number().min(1000000),
+  salary_cap: z.number().min(0).max(100),
   salary_cap_penalty_percentage: z.number().min(0).max(1),
   min_player_salary_percentage: z.number().int().min(50).max(100),
   max_player_salary_percentage: z.number().int().min(100).max(200),
@@ -19,6 +21,12 @@ const createServerSchema = z.object({
   enable_monetization: z.boolean(),
   match_frequency_minutes: z.number().int().min(60).max(1440),
   enable_auto_simulation: z.boolean(),
+  red_card_penalty: z.number().min(0),
+  allow_penalty_waiver: z.boolean(),
+  registration_start: z.string().datetime(),
+  registration_deadline: z.string().datetime(),
+  transfer_window_start: z.string().datetime().optional(),
+  transfer_window_end: z.string().datetime().optional(),
 });
 
 export async function POST(request: NextRequest) {
@@ -79,12 +87,12 @@ export async function POST(request: NextRequest) {
         season: 1,
         max_members: body.max_members,
         current_members: 0,
-        season_length_days: 40,
-        entry_mode: "public",
-        registration_start: new Date().toISOString(),
-        registration_deadline: new Date(
-          Date.now() + 7 * 24 * 60 * 60 * 1000
-        ).toISOString(), // 7 dias
+        season_length_days: body.season_length_days,
+        entry_mode: body.entry_mode,
+        registration_start: body.registration_start,
+        registration_deadline: body.registration_deadline,
+        transfer_window_start: body.transfer_window_start,
+        transfer_window_end: body.transfer_window_end,
         transfer_window_open: false,
         initial_budget: body.initial_budget,
         budget_growth_per_season: body.budget_growth_per_season,
@@ -98,6 +106,8 @@ export async function POST(request: NextRequest) {
         enable_monetization: body.enable_monetization,
         match_frequency_minutes: body.match_frequency_minutes,
         enable_auto_simulation: body.enable_auto_simulation,
+        red_card_penalty: body.red_card_penalty,
+        allow_penalty_waiver: body.allow_penalty_waiver,
         admin_id: user.id,
       })
       .select()

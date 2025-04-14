@@ -132,29 +132,38 @@ export async function GET(
     }
 
     // Busca os jogadores
-    const { data: players, error } = await supabase
-      .from("club_players")
+    const { data: players, error: playersError } = await supabase
+      .from("server_players")
       .select(
         `
         id,
-        number,
+        name,
+        age,
+        nationality,
         position,
-        player:server_players(
-          id,
-          name,
-          position,
-          attributes
-        )
+        overall,
+        potential,
+        pace,
+        shooting,
+        passing,
+        dribbling,
+        defending,
+        physical,
+        contract,
+        morale,
+        form,
+        xp,
+        level,
+        is_star_player
       `
       )
-      .eq("club_id", params.id)
-      .order("number");
+      .eq("club_id", params.id);
 
-    if (error) {
+    if (playersError) {
       throw new ApiError({
         message: "Erro ao buscar jogadores",
         code: "PLAYERS_FETCH_FAILED",
-        details: error,
+        details: playersError,
       });
     }
 

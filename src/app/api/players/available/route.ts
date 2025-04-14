@@ -4,27 +4,58 @@ import { checkRateLimit } from "@/lib/api/rate-limit";
 import { getCachedData, setCachedData } from "@/lib/api/cache";
 import { ApiError } from "@/lib/api/error";
 import { cookies } from "next/headers";
+import { z } from "zod";
 
 const cookieStore = cookies();
 const supabase = createServerClient(cookieStore);
+
+// Schema para validação dos parâmetros
+const querySchema = z.object({
+  position: z
+    .enum([
+      "GK",
+      "RMF",
+      "DMF",
+      "CB",
+      "CF",
+      "LB",
+      "RB",
+      "AMF",
+      "RWF",
+      "SS",
+      "LWF",
+      "LMF",
+      "CMF",
+    ])
+    .optional(),
+  min_age: z.string().optional(),
+  max_age: z.string().optional(),
+  min_value: z.string().optional(),
+  max_value: z.string().optional(),
+  page: z.string().optional(),
+  limit: z.string().optional(),
+});
 
 export async function GET(request: Request) {
   try {
     // Verifica rate limit
     await checkRateLimit("players-available", 30, 60); // 30 requisições por minuto
 
-    // Obtém parâmetros da query
+    // Obtém e valida parâmetros da query
     const { searchParams } = new URL(request.url);
-    const position = searchParams.get("position");
-    const minAge = searchParams.get("min_age");
-    const maxAge = searchParams.get("max_age");
-    const minValue = searchParams.get("min_value");
-    const maxValue = searchParams.get("max_value");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
+    const validatedParams = querySchema.parse(Object.fromEntries(searchParams));
+    const {
+      position,
+      min_age,
+      max_age,
+      min_value,
+      max_value,
+      page = "1",
+      limit = "20",
+    } = validatedParams;
 
     // Verifica cache
-    const cacheKey = `players-available:${position}:${minAge}:${maxAge}:${minValue}:${maxValue}:${page}:${limit}`;
+    const cacheKey = `players-available:${position}:${min_age}:${max_age}:${min_value}:${max_value}:${page}:${limit}`;
     const cached = await getCachedData(cacheKey);
     if (cached) {
       return NextResponse.json({
@@ -43,7 +74,14 @@ export async function GET(request: Request) {
         age,
         nationality,
         position,
-        attributes,
+        overall,
+        potential,
+        pace,
+        shooting,
+        passing,
+        dribbling,
+        defending,
+        physical,
         base_salary,
         base_value,
         club_id
@@ -55,22 +93,22 @@ export async function GET(request: Request) {
     if (position) {
       query = query.eq("position", position);
     }
-    if (minAge) {
-      query = query.gte("age", parseInt(minAge));
+    if (min_age) {
+      query = query.gte("age", parseInt(min_age));
     }
-    if (maxAge) {
-      query = query.lte("age", parseInt(maxAge));
+    if (max_age) {
+      query = query.lte("age", parseInt(max_age));
     }
-    if (minValue) {
-      query = query.gte("base_value", parseFloat(minValue));
+    if (min_value) {
+      query = query.gte("base_value", parseFloat(min_value));
     }
-    if (maxValue) {
-      query = query.lte("base_value", parseFloat(maxValue));
+    if (max_value) {
+      query = query.lte("base_value", parseFloat(max_value));
     }
 
     // Aplica paginação
-    const start = (page - 1) * limit;
-    const end = start + limit - 1;
+    const start = (parseInt(page) - 1) * parseInt(limit);
+    const end = start + parseInt(limit) - 1;
     query = query.range(start, end);
 
     // Executa a query
@@ -91,7 +129,7 @@ export async function GET(request: Request) {
         page,
         limit,
         total: count || 0,
-        pages: Math.ceil((count || 0) / limit),
+        pages: Math.ceil((count || 0) / parseInt(limit)),
       },
     };
     await setCachedData(cacheKey, result, 300);

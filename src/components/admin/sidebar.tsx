@@ -1,9 +1,10 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
-import { LayoutDashboard, Users, Trophy, Settings } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { LayoutDashboard, Server, Users } from "lucide-react";
 import { useAdmin } from "@/contexts/admin-context";
 import {
   Sheet,
@@ -12,68 +13,57 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 
-const navigation = [
+const sidebarNavItems = [
   {
-    name: "Dashboard",
+    title: "Dashboard",
     href: "/admin",
     icon: LayoutDashboard,
   },
   {
-    name: "Servidores",
+    title: "Servidores",
     href: "/admin/servers",
+    icon: Server,
+  },
+  {
+    title: "Jogadores",
+    href: "/admin/players",
     icon: Users,
-  },
-  {
-    name: "Competições",
-    href: "/admin/competitions",
-    icon: Trophy,
-  },
-  {
-    name: "Configurações",
-    href: "/admin/settings",
-    icon: Settings,
   },
 ];
 
-interface SidebarContentProps {
-  onClose?: () => void;
-}
-
-function SidebarContent({ onClose }: SidebarContentProps) {
+export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
 
   return (
-    <>
-      {/* Logo */}
-      <div className="flex h-16 items-center border-b px-4">
-        <Link href="/admin" className="flex items-center space-x-2">
-          <span className="text-xl font-bold">Footix Admin</span>
-        </Link>
+    <div className={cn("pb-12", className)}>
+      <div className="space-y-4 py-4">
+        <div className="px-3 py-2">
+          <h2 className="mb-2 px-4 text-lg font-semibold tracking-tight">
+            Administração
+          </h2>
+          <div className="space-y-1">
+            <nav className="grid gap-1">
+              {sidebarNavItems.map((item, index) => {
+                const Icon = item.icon;
+                return (
+                  <Button
+                    key={index}
+                    asChild
+                    variant={pathname === item.href ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                  >
+                    <Link href={item.href}>
+                      <Icon className="mr-2 h-4 w-4" />
+                      {item.title}
+                    </Link>
+                  </Button>
+                );
+              })}
+            </nav>
+          </div>
+        </div>
       </div>
-
-      {/* Navegação */}
-      <nav className="flex-1 space-y-1 p-4">
-        {navigation.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.name}
-              href={item.href}
-              onClick={onClose}
-              className={cn(
-                "flex items-center space-x-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                isActive
-                  ? "bg-primary text-primary-foreground"
-                  : "hover:bg-accent hover:text-accent-foreground"
-              )}
-            >
-              <item.icon className="h-5 w-5" />
-              <span>{item.name}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </>
+    </div>
   );
 }
 
@@ -84,7 +74,7 @@ export function AdminSidebar() {
     <>
       {/* Desktop sidebar */}
       <div className="hidden md:flex h-full w-64 flex-col border-r bg-background">
-        <SidebarContent />
+        <Sidebar />
       </div>
 
       {/* Mobile sidebar */}
@@ -95,7 +85,7 @@ export function AdminSidebar() {
             Menu de navegação do painel administrativo com acesso a Dashboard,
             Servidores, Competições e Configurações
           </SheetDescription>
-          <SidebarContent onClose={closeMobileMenu} />
+          <Sidebar />
         </SheetContent>
       </Sheet>
     </>

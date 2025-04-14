@@ -54,7 +54,14 @@ export async function POST(
         id,
         name,
         position,
-        attributes,
+        overall,
+        potential,
+        pace,
+        shooting,
+        passing,
+        dribbling,
+        defending,
+        physical,
         contract,
         morale,
         form,
@@ -83,7 +90,7 @@ export async function POST(
       );
 
     // Processa evolução de cada jogador
-    const updatedPlayers = players.map((player) => {
+    const updatePromises = players.map(async (player) => {
       const playerStats = stats?.find((s) => s.player_id === player.id);
 
       // Calcula XP baseado em estatísticas
@@ -122,43 +129,88 @@ export async function POST(
       const newLevel = Math.floor(newXp / 1000) + 1; // Cada nível requer 1000 XP
 
       // Calcula evolução de atributos
-      const attributes = { ...player.attributes };
       const attributeIncrease = Math.floor((newLevel - player.level) * 2); // +2 por nível
 
-      // Distribui aumento de atributos baseado na posição
-      const positionAttributes = getPositionAttributes(player.position);
-      positionAttributes.forEach((attr) => {
-        attributes[attr] = Math.min(99, attributes[attr] + attributeIncrease);
-      });
-
-      // Atualiza valor de mercado
-      const baseValue = player.contract.base_value || 1000000;
-      const newValue = Math.floor(
-        baseValue *
-          (1 + (newLevel - player.level) * 0.1) *
-          server.market_value_multiplier
-      );
-
-      return {
-        id: player.id,
-        xp: newXp,
-        level: newLevel,
-        attributes,
-        contract: {
-          ...player.contract,
-          base_value: newValue,
-        },
+      // Atualiza os atributos do jogador
+      const updatedAttributes = {
+        overall: Math.min(99, player.overall + attributeIncrease),
+        potential: Math.min(99, player.potential + attributeIncrease),
+        pace: Math.min(99, player.pace + attributeIncrease),
+        shooting: Math.min(99, player.shooting + attributeIncrease),
+        passing: Math.min(99, player.passing + attributeIncrease),
+        dribbling: Math.min(99, player.dribbling + attributeIncrease),
+        defending: Math.min(99, player.defending + attributeIncrease),
+        physical: Math.min(99, player.physical + attributeIncrease),
       };
+
+      // Atualiza os atributos do jogador
+      const { error: updateError } = await supabase
+        .from("server_players")
+        .update({
+          overall: updatedAttributes.overall,
+          potential: updatedAttributes.potential,
+          pace: updatedAttributes.pace,
+          shooting: updatedAttributes.shooting,
+          passing: updatedAttributes.passing,
+          dribbling: updatedAttributes.dribbling,
+          defending: updatedAttributes.defending,
+          physical: updatedAttributes.physical,
+          xp: 0,
+          level: newLevel,
+        })
+        .eq("id", player.id);
+
+      if (updateError) {
+        throw new Error("Erro ao atualizar jogador");
+      }
+
+      // Retorna o jogador atualizado
+      const updatedPlayer = {
+        id: player.id,
+        name: player.name,
+        position: player.position,
+        overall: updatedAttributes.overall,
+        potential: updatedAttributes.potential,
+        pace: updatedAttributes.pace,
+        shooting: updatedAttributes.shooting,
+        passing: updatedAttributes.passing,
+        dribbling: updatedAttributes.dribbling,
+        defending: updatedAttributes.defending,
+        physical: updatedAttributes.physical,
+        contract: player.contract,
+        morale: player.morale,
+        form: player.form,
+        xp: 0,
+        level: newLevel,
+        is_star_player: player.is_star_player,
+      };
+
+      return updatedPlayer;
     });
+
+    // Aguarda todas as atualizações
+    const updatedPlayers = await Promise.all(updatePromises);
 
     // Atualiza jogadores no banco
     const { error: updateError } = await supabase.from("server_players").upsert(
       updatedPlayers.map((p) => ({
         id: p.id,
+        name: p.name,
+        position: p.position,
+        overall: p.overall,
+        potential: p.potential,
+        pace: p.pace,
+        shooting: p.shooting,
+        passing: p.passing,
+        dribbling: p.dribbling,
+        defending: p.defending,
+        physical: p.physical,
+        contract: p.contract,
+        morale: p.morale,
+        form: p.form,
         xp: p.xp,
         level: p.level,
-        attributes: p.attributes,
-        contract: p.contract,
+        is_star_player: p.is_star_player,
       }))
     );
 
@@ -174,48 +226,15 @@ export async function POST(
     await invalidateCache(`club:${params.id}:players`);
 
     return NextResponse.json({
-      message: "Evolução dos jogadores processada com sucesso",
-      data: {
-        players_processed: updatedPlayers.length,
-        players: updatedPlayers.map((p) => ({
-          id: p.id,
-          level: p.level,
-          xp: p.xp,
-          attributes: p.attributes,
-          new_value: p.contract.base_value,
-        })),
-      },
+      success: true,
+      message: "Jogadores evoluíram com sucesso",
+      players: updatedPlayers,
     });
   } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json(
-        { error: error.message, code: error.code },
-        { status: 400 }
-      );
-    }
-
-    console.error("Erro ao processar evolução dos jogadores:", error);
+    console.error("Erro ao processar evolução:", error);
     return NextResponse.json(
-      { error: "Erro interno do servidor" },
+      { error: "Erro ao processar evolução dos jogadores" },
       { status: 500 }
     );
   }
-}
-
-// Função auxiliar para determinar atributos relevantes por posição
-function getPositionAttributes(position: string): string[] {
-  const attributesMap: Record<string, string[]> = {
-    GK: ["reflexes", "handling", "positioning", "aerial", "command"],
-    CB: ["tackling", "marking", "positioning", "strength", "aerial"],
-    LB: ["tackling", "marking", "pace", "stamina", "crossing"],
-    RB: ["tackling", "marking", "pace", "stamina", "crossing"],
-    CDM: ["tackling", "passing", "vision", "positioning", "strength"],
-    CM: ["passing", "vision", "technique", "stamina", "positioning"],
-    CAM: ["passing", "vision", "technique", "dribbling", "shooting"],
-    LW: ["pace", "dribbling", "crossing", "technique", "shooting"],
-    RW: ["pace", "dribbling", "crossing", "technique", "shooting"],
-    ST: ["shooting", "finishing", "pace", "strength", "aerial"],
-  };
-
-  return attributesMap[position] || [];
 }

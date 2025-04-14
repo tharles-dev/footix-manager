@@ -32,6 +32,34 @@ export function useServers() {
   return { servers, loading, error };
 }
 
+export function useServer(id: string) {
+  const [server, setServer] = useState<Server | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    const fetchServer = async () => {
+      try {
+        setLoading(true);
+        const data = await serversService.getById(id);
+        setServer(data);
+      } catch (err) {
+        setError(
+          err instanceof Error ? err : new Error("Erro ao carregar servidor")
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchServer();
+    }
+  }, [id]);
+
+  return { server, loading, error };
+}
+
 export function useCompetitions(serverId: string) {
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [loading, setLoading] = useState(true);
@@ -159,4 +187,83 @@ export function useSettings() {
   }, []);
 
   return { settings, loading, error };
+}
+
+export type ServerData = {
+  name: string;
+  max_members: number;
+  season_length_days: number;
+  entry_mode: "public" | "private";
+  registration_deadline?: string;
+  current_season_start?: string;
+  current_season_end?: string;
+  registration_start?: string;
+  transfer_window_open?: boolean;
+  transfer_window_start?: string;
+  transfer_window_end?: string;
+  initial_budget: number;
+  budget_growth_per_season: number;
+  salary_cap: number;
+  salary_cap_penalty_percentage: number;
+  min_player_salary_percentage: number;
+  max_player_salary_percentage: number;
+  activate_clause: boolean;
+  auto_clause_percentage: number;
+  market_value_multiplier: number;
+  enable_monetization: boolean;
+  match_frequency_minutes: number;
+  enable_auto_simulation: boolean;
+  red_card_penalty: number;
+  allow_penalty_waiver: boolean;
+  players_source?: string;
+};
+
+export type CreateServerData = ServerData;
+export type ServerEditData = ServerData;
+
+export async function createServer(data: CreateServerData) {
+  const response = await fetch("/api/admin/servers/manual", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao criar servidor");
+  }
+
+  return response.json();
+}
+
+export async function updateServer(id: string, data: ServerEditData) {
+  const response = await fetch(`/api/admin/servers/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao atualizar servidor");
+  }
+
+  return response.json();
+}
+
+export async function deleteServer(id: string) {
+  const response = await fetch(`/api/admin/servers/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.message || "Erro ao excluir servidor");
+  }
+
+  return response.json();
 }

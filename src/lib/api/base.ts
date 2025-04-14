@@ -1,4 +1,3 @@
-import { createClient } from "@/lib/supabase/client";
 import { ApiError } from "./error";
 
 export type ApiResponse<T> = {
@@ -12,29 +11,42 @@ export type ApiErrorResponse = {
 };
 
 export class ApiService {
-  protected supabase = createClient();
-
   protected async get<T>(
     endpoint: string,
     params?: Record<string, string>
   ): Promise<ApiResponse<T>> {
     try {
-      let query = this.supabase.from(endpoint).select("*");
+      let url = endpoint;
 
       if (params) {
+        const queryParams = new URLSearchParams();
         Object.entries(params).forEach(([key, value]) => {
-          query = query.eq(key, value);
+          queryParams.append(key, value);
+        });
+        const queryString = queryParams.toString();
+        if (queryString) {
+          url += `?${queryString}`;
+        }
+      }
+
+      const response = await fetch(url);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError({
+          message: errorData.message || "Erro ao buscar dados",
+          code: errorData.code || "FETCH_ERROR",
         });
       }
 
-      const { data, error } = await query;
-
-      if (error) throw new ApiError(error.message, error.code);
-
-      return { data: data as T };
+      const data = await response.json();
+      return data;
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      throw new ApiError("Erro ao buscar dados", "FETCH_ERROR");
+      throw new ApiError({
+        message: "Erro ao buscar dados",
+        code: "FETCH_ERROR",
+      });
     }
   }
 
@@ -43,17 +55,30 @@ export class ApiService {
     body: B
   ): Promise<ApiResponse<T>> {
     try {
-      const { data, error } = await this.supabase
-        .from(endpoint)
-        .insert(body)
-        .select();
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
-      if (error) throw new ApiError(error.message, error.code);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError({
+          message: errorData.message || "Erro ao criar dados",
+          code: errorData.code || "CREATE_ERROR",
+        });
+      }
 
-      return { data: data as T, message: "Operação realizada com sucesso" };
+      const data = await response.json();
+      return data;
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      throw new ApiError("Erro ao criar dados", "CREATE_ERROR");
+      throw new ApiError({
+        message: "Erro ao criar dados",
+        code: "CREATE_ERROR",
+      });
     }
   }
 
@@ -63,18 +88,30 @@ export class ApiService {
     body: B
   ): Promise<ApiResponse<T>> {
     try {
-      const { data, error } = await this.supabase
-        .from(endpoint)
-        .update(body)
-        .eq("id", id)
-        .select();
+      const response = await fetch(`${endpoint}/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      });
 
-      if (error) throw new ApiError(error.message, error.code);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError({
+          message: errorData.message || "Erro ao atualizar dados",
+          code: errorData.code || "UPDATE_ERROR",
+        });
+      }
 
-      return { data: data as T, message: "Operação atualizada com sucesso" };
+      const data = await response.json();
+      return data;
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      throw new ApiError("Erro ao atualizar dados", "UPDATE_ERROR");
+      throw new ApiError({
+        message: "Erro ao atualizar dados",
+        code: "UPDATE_ERROR",
+      });
     }
   }
 
@@ -83,17 +120,26 @@ export class ApiService {
     id: string
   ): Promise<ApiResponse<null>> {
     try {
-      const { error } = await this.supabase
-        .from(endpoint)
-        .delete()
-        .eq("id", id);
+      const response = await fetch(`${endpoint}/${id}`, {
+        method: "DELETE",
+      });
 
-      if (error) throw new ApiError(error.message, error.code);
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new ApiError({
+          message: errorData.message || "Erro ao excluir dados",
+          code: errorData.code || "DELETE_ERROR",
+        });
+      }
 
-      return { data: null, message: "Operação excluída com sucesso" };
+      const data = await response.json();
+      return data;
     } catch (error) {
       if (error instanceof ApiError) throw error;
-      throw new ApiError("Erro ao excluir dados", "DELETE_ERROR");
+      throw new ApiError({
+        message: "Erro ao excluir dados",
+        code: "DELETE_ERROR",
+      });
     }
   }
 }

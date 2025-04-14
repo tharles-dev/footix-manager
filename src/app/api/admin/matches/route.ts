@@ -503,7 +503,7 @@ export async function PUT(request: Request) {
 
 // Função auxiliar para atualizar a classificação de um clube
 async function updateClubStanding(
-  supabase: any,
+  supabase: ReturnType<typeof createServerClient>,
   competitionId: string,
   clubId: string,
   goalsFor: number,
@@ -529,6 +529,13 @@ async function updateClubStanding(
       .select("points_win, points_draw")
       .eq("id", competitionId)
       .single();
+
+    if (!competition) {
+      throw new ApiError({
+        message: "Competição não encontrada",
+        code: "COMPETITION_NOT_FOUND",
+      });
+    }
 
     // Calcula os novos valores
     const pointsToAdd = isWin

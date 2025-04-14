@@ -1226,6 +1226,317 @@ Distribui as premiações para os clubes e jogadores de uma competição finaliz
 
 - Logs do servidor: simulações, negociações, punições, etc
 
+### GET `/api/admin/players/global`
+
+- Lista todos os jogadores globais disponíveis para importação
+- Query params:
+  - `page`: Página (default: 1)
+  - `limit`: Itens por página (default: 20)
+  - `position`: Filtra por posição (GK, DEF, MID, ATT)
+  - `search`: Busca por nome
+  - `min_overall`: Overall mínimo
+  - `max_overall`: Overall máximo
+  - `min_potential`: Potencial mínimo
+  - `max_potential`: Potencial máximo
+- Retorna:
+  ```json
+  {
+    "data": {
+      "players": [
+        {
+          "id": "uuid",
+          "name": "string",
+          "age": "number",
+          "nationality": "string",
+          "position": "string",
+          "overall": "number",
+          "potential": "number",
+          "pace": "number",
+          "shooting": "number",
+          "passing": "number",
+          "dribbling": "number",
+          "defending": "number",
+          "physical": "number",
+          "base_salary": "number",
+          "base_value": "number"
+        }
+      ],
+      "pagination": {
+        "total": "number",
+        "page": "number",
+        "limit": "number",
+        "pages": "number"
+      }
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### GET `/api/admin/players/global/{id}`
+
+- Retorna detalhes de um jogador global específico
+- Retorna:
+  ```json
+  {
+    "data": {
+      "player": {
+        "id": "uuid",
+        "name": "string",
+        "age": "number",
+        "nationality": "string",
+        "position": "string",
+        "overall": "number",
+        "potential": "number",
+        "pace": "number",
+        "shooting": "number",
+        "passing": "number",
+        "dribbling": "number",
+        "defending": "number",
+        "physical": "number",
+        "base_salary": "number",
+        "base_value": "number"
+      }
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/admin/players/import`
+
+- Importa jogadores de um arquivo CSV para a base global
+- Payload:
+  - Formato multipart/form-data
+  - Campo `file`: Arquivo CSV com os jogadores
+- Formato do CSV:
+  ```
+  name,age,nationality,position,overall,potential,pace,shooting,passing,dribbling,defending,physical,base_salary,base_value
+  Neymar Jr,31,Brasil,ATT,89,89,85,88,85,93,36,63,1200000,80000000
+  ```
+- Retorna:
+  ```json
+  {
+    "message": "Jogadores importados com sucesso",
+    "data": {
+      "imported_count": "number"
+    }
+  }
+  ```
+- Validações:
+  - Arquivo deve ser CSV
+  - Campos obrigatórios: name, age, nationality, position, overall, potential
+  - Valores numéricos devem ser válidos
+  - Posição deve ser uma das seguintes: GK, DEF, MID, ATT
+- Rate Limit: 5 requisições/minuto
+
+### GET `/api/admin/players/server/{server_id}`
+
+- Lista todos os jogadores de um servidor específico
+- Query params:
+  - `page`: Página (default: 1)
+  - `limit`: Itens por página (default: 20)
+  - `position`: Filtra por posição (GK, DEF, MID, ATT)
+  - `search`: Busca por nome
+  - `club_id`: Filtra por clube
+  - `is_on_loan`: Filtra por jogadores emprestados (true/false)
+  - `is_star_player`: Filtra por jogadores estrela (true/false)
+- Retorna:
+  ```json
+  {
+    "data": {
+      "players": [
+        {
+          "id": "uuid",
+          "name": "string",
+          "age": "number",
+          "nationality": "string",
+          "position": "string",
+          "overall": "number",
+          "potential": "number",
+          "pace": "number",
+          "shooting": "number",
+          "passing": "number",
+          "dribbling": "number",
+          "defending": "number",
+          "physical": "number",
+          "contract": {
+            "salary": "number",
+            "clause_value": "number",
+            "contract_start": "timestamp",
+            "contract_end": "timestamp"
+          },
+          "club_id": "uuid",
+          "club_name": "string",
+          "is_on_loan": "boolean",
+          "loan_from_club_id": "uuid",
+          "loan_from_club_name": "string",
+          "morale": "number",
+          "form": "number",
+          "xp": "number",
+          "level": "number",
+          "is_star_player": "boolean"
+        }
+      ],
+      "pagination": {
+        "total": "number",
+        "page": "number",
+        "limit": "number",
+        "pages": "number"
+      }
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### GET `/api/admin/players/server/{server_id}/{id}`
+
+- Retorna detalhes de um jogador específico de um servidor
+- Retorna:
+  ```json
+  {
+    "data": {
+      "player": {
+        "id": "uuid",
+        "name": "string",
+        "age": "number",
+        "nationality": "string",
+        "position": "string",
+        "overall": "number",
+        "potential": "number",
+        "pace": "number",
+        "shooting": "number",
+        "passing": "number",
+        "dribbling": "number",
+        "defending": "number",
+        "physical": "number",
+        "contract": {
+          "salary": "number",
+          "clause_value": "number",
+          "contract_start": "timestamp",
+          "contract_end": "timestamp"
+        },
+        "club_id": "uuid",
+        "club_name": "string",
+        "is_on_loan": "boolean",
+        "loan_from_club_id": "uuid",
+        "loan_from_club_name": "string",
+        "morale": "number",
+        "form": "number",
+        "xp": "number",
+        "level": "number",
+        "is_star_player": "boolean"
+      }
+    }
+  }
+  ```
+- Rate Limit: 30 requisições/minuto
+- Cache: 5 minutos
+
+### POST `/api/admin/players/server/{server_id}/create`
+
+- Cria um novo jogador em um servidor específico
+- Payload:
+  ```json
+  {
+    "name": "string",
+    "age": "number",
+    "nationality": "string",
+    "position": "string",
+    "overall": "number",
+    "potential": "number",
+    "pace": "number",
+    "shooting": "number",
+    "passing": "number",
+    "dribbling": "number",
+    "defending": "number",
+    "physical": "number",
+    "club_id": "uuid",
+    "is_star_player": "boolean"
+  }
+  ```
+- Retorna:
+  ```json
+  {
+    "message": "Jogador criado com sucesso",
+    "data": {
+      "player": {
+        "id": "uuid",
+        "name": "string",
+        "position": "string",
+        "overall": "number",
+        "club_id": "uuid"
+      }
+    }
+  }
+  ```
+- Validações:
+  - Campos obrigatórios: name, age, nationality, position, overall, potential
+  - Valores numéricos devem ser válidos
+  - Posição deve ser uma das seguintes: GK, DEF, MID, ATT
+  - Clube deve existir no servidor
+- Rate Limit: 5 requisições/minuto
+
+### PUT `/api/admin/players/server/{server_id}/{id}`
+
+- Atualiza um jogador existente em um servidor
+- Payload:
+  ```json
+  {
+    "name": "string",
+    "age": "number",
+    "nationality": "string",
+    "position": "string",
+    "overall": "number",
+    "potential": "number",
+    "pace": "number",
+    "shooting": "number",
+    "passing": "number",
+    "dribbling": "number",
+    "defending": "number",
+    "physical": "number",
+    "club_id": "uuid",
+    "is_star_player": "boolean"
+  }
+  ```
+- Retorna:
+  ```json
+  {
+    "message": "Jogador atualizado com sucesso",
+    "data": {
+      "player": {
+        "id": "uuid",
+        "name": "string",
+        "position": "string",
+        "overall": "number",
+        "club_id": "uuid"
+      }
+    }
+  }
+  ```
+- Validações:
+  - Jogador deve existir no servidor
+  - Campos obrigatórios: name, age, nationality, position, overall, potential
+  - Valores numéricos devem ser válidos
+  - Posição deve ser uma das seguintes: GK, DEF, MID, ATT
+  - Clube deve existir no servidor
+- Rate Limit: 5 requisições/minuto
+
+### DELETE `/api/admin/players/server/{server_id}/{id}`
+
+- Remove um jogador de um servidor
+- Retorna:
+  ```json
+  {
+    "message": "Jogador removido com sucesso"
+  }
+  ```
+- Validações:
+  - Jogador deve existir no servidor
+  - Jogador não pode estar vinculado a um clube
+- Rate Limit: 5 requisições/minuto
+
 ## Gerenciamento de Partidas
 
 ### Listar Partidas
