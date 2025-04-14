@@ -1,0 +1,86 @@
+import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+
+export async function GET() {
+  try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+
+    // Verificar autenticação
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "Não autorizado", message: "Usuário não autenticado" },
+        { status: 401 }
+      );
+    }
+
+    // Verificar se o usuário é administrador
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    if (userError || userData?.role !== "admin") {
+      return NextResponse.json(
+        { error: "Acesso negado", message: "Usuário não é administrador" },
+        { status: 403 }
+      );
+    }
+
+    // Buscar todos os servidores
+    const { data: servers, error: serversError } = await supabase
+      .from("servers")
+      .select(
+        `
+        id,
+        name,
+        status,
+        season,
+        max_members,
+        current_members,
+        registration_deadline,
+        season_length_days,
+        entry_mode,
+        current_season_start,
+        current_season_end,
+        registration_start,
+        transfer_window_open,
+        transfer_window_start,
+        transfer_window_end,
+        initial_budget,
+        budget_growth_per_season,
+        salary_cap,
+        enable_monetization,
+        match_frequency_minutes,
+        enable_auto_simulation,
+        last_simulation,
+        next_simulation,
+        created_at,
+        updated_at
+      `
+      )
+      .order("created_at", { ascending: false });
+
+    if (serversError) {
+      console.error("Erro ao buscar servidores:", serversError);
+      return NextResponse.json(
+        { error: "Erro interno", message: "Falha ao buscar servidores" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ data: servers });
+  } catch (error) {
+    console.error("Erro ao processar requisição:", error);
+    return NextResponse.json(
+      { error: "Erro interno", message: "Erro ao processar requisição" },
+      { status: 500 }
+    );
+  }
+}

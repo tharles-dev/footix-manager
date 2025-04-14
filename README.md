@@ -17,14 +17,16 @@
 │
 ├── app
 │   ├── api/                  ← Rotas de API REST (auth, clube, servidor...)
-│   ├── (admin)/              ← Painel administrativo (com layout próprio)
+│   ├── admin/                ← Painel administrativo (com layout próprio)
 │   ├── (web)/                ← App do jogador (responsivo, PWA-first)
-│   ├── login/                ← Tela de login unificada
+│   ├── auth/                 ← Autenticação e login
 │   ├── layout.tsx           ← Layout raiz (ex: auth, toast, etc)
 │   └── page.tsx             ← Redirecionamento conforme papel (admin/user)
 │
 ├── lib/                     ← Funções utilitárias (supabase, auth, helpers)
 ├── components/              ← Componentes reutilizáveis (botões, cards, tabelas)
+├── contexts/                ← Contextos React (mobile menu, etc)
+├── hooks/                   ← Hooks personalizados (useSettings, etc)
 ├── public/                  ← Manifest PWA, ícones
 ├── next.config.ts
 └── manifest.json
@@ -177,9 +179,9 @@
 
 #### 3.1 Interface Base
 
-- [ ] Implementar layout administrativo:
-  - [ ] Sidebar responsiva
-  - [ ] Header com ações
+- [x] Implementar layout administrativo:
+  - [x] Sidebar responsiva
+  - [x] Header com ações
   - [ ] Sistema de navegação
 - [ ] Criar componentes base:
   - [ ] Tabelas de dados
@@ -218,7 +220,7 @@
 #### 4.2 Páginas Principais
 
 - [ ] Implementar páginas usando App Router:
-  - [ ] `/login` com autenticação Google
+  - [x] `/auth` com autenticação Google
   - [ ] `/server/select` para escolha de servidor
   - [ ] `/club/create` para criação de clube
   - [ ] `/dashboard` com layout responsivo
@@ -237,9 +239,10 @@
 
 #### 4.4 Integração com Supabase
 
-- [ ] Configurar cliente Supabase
-- [ ] Implementar hooks personalizados:
-  - [ ] `useAuth` para autenticação
+- [x] Configurar cliente Supabase
+- [x] Implementar hooks personalizados:
+  - [x] `useAuth` para autenticação
+  - [x] `useSettings` para configurações
   - [ ] `useClub` para dados do clube
   - [ ] `useServer` para dados do servidor
 - [ ] Configurar realtime subscriptions:
