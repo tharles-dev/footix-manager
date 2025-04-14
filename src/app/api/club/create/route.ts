@@ -1,108 +1,115 @@
-import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase";
-import { createClubSchema } from "@/lib/api/schemas/club";
-import { validateData } from "@/lib/api/validation";
-import { checkRateLimit } from "@/lib/api/rate-limit";
-import { getCachedData, setCachedData } from "@/lib/api/cache";
-import { ApiError } from "@/lib/api/error";
 import { cookies } from "next/headers";
+import { apiResponse } from "@/lib/api/response";
+import { z } from "zod";
 
-const cookieStore = cookies();
-const supabase = createServerClient(cookieStore);
+const createClubSchema = z.object({
+  name: z.string().min(3).max(50),
+  city: z.string().min(2).max(50),
+  country: z.string().min(2).max(50),
+  logo_url: z.string().url().optional(),
+});
 
 export async function POST(request: Request) {
   try {
-    // Verifica rate limit
-    await checkRateLimit("club-create", 5, 60); // 5 requisições por minuto
+    const cookieStore = cookies();
+    const supabase = createServerClient(cookieStore);
 
-    // Obtém e valida os dados
-    const body = await request.json();
-    const data = validateData(createClubSchema, body);
+    // 1. Verifica autenticação
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser();
 
-    // Verifica se o usuário já tem um clube
+    if (authError || !user) {
+      return apiResponse({ error: "Não autorizado" }, { status: 401 });
+    }
+
+    // 2. Verifica se usuário já tem clube
     const { data: existingClub } = await supabase
-      .from("clubs")
-      .select("id")
-      .eq("user_id", request.headers.get("user-id"))
+      .from("server_members")
+      .select("club_id")
+      .eq("user_id", user.id)
       .single();
 
-    if (existingClub) {
-      throw new ApiError({
-        message: "Você já possui um clube",
-        code: "CLUB_ALREADY_EXISTS",
-      });
-    }
-
-    // Verifica se o servidor existe e tem vagas
-    const { data: server } = await supabase
-      .from("servers")
-      .select("id, current_members, max_members")
-      .eq("id", data.server_id)
-      .single();
-
-    if (!server) {
-      throw new ApiError({
-        message: "Servidor não encontrado",
-        code: "SERVER_NOT_FOUND",
-      });
-    }
-
-    if (server.current_members >= server.max_members) {
-      throw new ApiError({
-        message: "Servidor está cheio",
-        code: "SERVER_FULL",
-      });
-    }
-
-    // Cria o clube
-    const { data: club, error } = await supabase
-      .from("clubs")
-      .insert({
-        ...data,
-        user_id: request.headers.get("user-id"),
-        balance: 5000000, // Saldo inicial
-        reputation: 50, // Reputação inicial
-        fan_base: 1000, // Torcida inicial
-        stadium_capacity: 10000, // Capacidade inicial
-        ticket_price: 20, // Preço do ingresso inicial
-        season_ticket_holders: 100, // Sócios iniciais
-      })
-      .select()
-      .single();
-
-    if (error) {
-      throw new ApiError({
-        message: "Erro ao criar clube",
-        code: "CLUB_CREATION_FAILED",
-        details: error,
-      });
-    }
-
-    // Atualiza o número de membros do servidor
-    await supabase
-      .from("servers")
-      .update({ current_members: server.current_members + 1 })
-      .eq("id", data.server_id);
-
-    // Cache do clube por 5 minutos
-    await setCachedData(`club:${club.id}`, club, 300);
-
-    return NextResponse.json({
-      message: "Clube criado com sucesso",
-      data: club,
-    });
-  } catch (error) {
-    if (error instanceof ApiError) {
-      return NextResponse.json(
-        { error: error.message, code: error.code },
+    if (existingClub?.club_id) {
+      return apiResponse(
+        { error: "Usuário já possui um clube" },
         { status: 400 }
       );
     }
 
+    // 3. Busca servidor do usuário
+    const { data: serverMember } = await supabase
+      .from("server_members")
+      .select("server_id")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!serverMember?.server_id) {
+      return apiResponse(
+        { error: "Usuário não está vinculado a um servidor" },
+        { status: 400 }
+      );
+    }
+
+    // 4. Valida dados do clube
+    const body = await request.json();
+    const validatedData = createClubSchema.parse(body);
+
+    // 5. Cria clube
+    const { data: club, error: clubError } = await supabase
+      .from("clubs")
+      .insert({
+        server_id: serverMember.server_id,
+        user_id: user.id,
+        name: validatedData.name,
+        city: validatedData.city,
+        country: validatedData.country,
+        logo_url: validatedData.logo_url,
+        balance: 5000000, // Valor inicial
+        season_budget_base: 5000000,
+        reputation: 50,
+        fan_base: 1000,
+        stadium_capacity: 10000,
+        ticket_price: 20,
+        season_ticket_holders: 100,
+      })
+      .select()
+      .single();
+
+    if (clubError) {
+      console.error("Erro ao criar clube:", clubError);
+      return apiResponse({ error: "Erro ao criar clube" }, { status: 500 });
+    }
+
+    // 6. Atualiza server_members com o clube criado
+    const { error: updateError } = await supabase
+      .from("server_members")
+      .update({ club_id: club.id })
+      .eq("user_id", user.id)
+      .eq("server_id", serverMember.server_id);
+
+    if (updateError) {
+      console.error("Erro ao atualizar server_members:", updateError);
+      return apiResponse(
+        { error: "Erro ao vincular clube ao usuário" },
+        { status: 500 }
+      );
+    }
+
+    return apiResponse({
+      message: "Clube criado com sucesso",
+      club,
+    });
+  } catch (error) {
     console.error("Erro ao criar clube:", error);
-    return NextResponse.json(
-      { error: "Erro interno do servidor" },
-      { status: 500 }
-    );
+    if (error instanceof z.ZodError) {
+      return apiResponse(
+        { error: "Dados inválidos", details: error.errors },
+        { status: 400 }
+      );
+    }
+    return apiResponse({ error: "Erro interno do servidor" }, { status: 500 });
   }
 }

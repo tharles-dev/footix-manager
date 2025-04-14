@@ -40,6 +40,6 @@ export default async function Home() {
   if (role === "admin") {
     return redirect("/admin");
   } else {
-    return redirect("/web");
+    return redirect("/web/dashboard");
   }
 }

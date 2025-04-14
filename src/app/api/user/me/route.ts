@@ -9,11 +9,11 @@ export async function GET() {
 
     // Get session
     const {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession();
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-    if (sessionError || !session) {
+    if (userError || !user) {
       return apiError(
         { message: "Not authenticated", code: "NOT_AUTHENTICATED" },
         401
@@ -21,15 +21,15 @@ export async function GET() {
     }
 
     // Get user data
-    const { data: user, error: userError } = await supabase
+    const { data: userData, error: userDataError } = await supabase
       .from("users")
       .select("*")
-      .eq("id", session.user.id)
+      .eq("id", user.id)
       .single();
 
-    if (userError) {
+    if (userDataError) {
       return apiError(
-        { message: userError.message, code: "USER_NOT_FOUND" },
+        { message: userDataError.message, code: "USER_NOT_FOUND" },
         404
       );
     }
@@ -38,11 +38,11 @@ export async function GET() {
     const { data: club } = await supabase
       .from("clubs")
       .select("*")
-      .eq("user_id", session.user.id)
+      .eq("user_id", user.id)
       .single();
 
     return apiResponse({
-      user,
+      user: userData,
       club: club || null,
     });
   } catch (error) {

@@ -18,7 +18,7 @@
 ├── app
 │   ├── api/                  ← Rotas de API REST (auth, clube, servidor...)
 │   ├── admin/                ← Painel administrativo (com layout próprio)
-│   ├── (web)/                ← App do jogador (responsivo, PWA-first)
+│   ├── web/                  ← App do jogador (responsivo, PWA-first)
 │   ├── auth/                 ← Autenticação e login
 │   ├── layout.tsx           ← Layout raiz (ex: auth, toast, etc)
 │   └── page.tsx             ← Redirecionamento conforme papel (admin/user)

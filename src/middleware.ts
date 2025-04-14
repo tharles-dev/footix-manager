@@ -26,6 +26,16 @@ const isPublicRoute = (path: string) => {
   return publicRoutes.some((route) => path.startsWith(route));
 };
 
+// Verifica se a rota é de criação de clube
+const isClubCreationRoute = (path: string) => {
+  return path.match(/^\/server\/[^\/]+\/club\/create/);
+};
+
+// Verifica se a rota é o dashboard do web
+const isWebDashboardRoute = (path: string) => {
+  return path === "/web/dashboard";
+};
+
 export async function middleware(request: NextRequest) {
   const { response, supabase } = createClient(request);
   const path = request.nextUrl.pathname;
@@ -55,7 +65,7 @@ export async function middleware(request: NextRequest) {
   if (error) {
     console.error("Erro ao buscar papel do usuário:", error);
     // Em caso de erro, assume papel padrão
-    return NextResponse.redirect(new URL("/web", request.url));
+    return NextResponse.redirect(new URL("/web/dashboard", request.url));
   }
 
   const role = userData?.role || "user";
@@ -69,7 +79,17 @@ export async function middleware(request: NextRequest) {
   } else {
     // Se for user e estiver tentando acessar rotas do admin, redireciona para web
     if (path.startsWith("/admin")) {
-      return NextResponse.redirect(new URL("/web", request.url));
+      return NextResponse.redirect(new URL("/web/dashboard", request.url));
+    }
+
+    // Permite acesso à rota de criação de clube para usuários normais
+    if (isClubCreationRoute(path)) {
+      return response;
+    }
+
+    // Permite acesso ao dashboard do web para usuários normais
+    if (isWebDashboardRoute(path)) {
+      return response;
     }
   }
 
