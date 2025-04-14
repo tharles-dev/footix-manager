@@ -35,6 +35,7 @@ export interface Club {
   fan_base: number;
   season_budget_base: number;
   season_expenses: number;
+  server_id: string;
 }
 
 interface AppContextType {

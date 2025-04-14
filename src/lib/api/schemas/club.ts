@@ -110,3 +110,9 @@ export const addRevenueSchema = z.object({
   description: z.string().min(3).max(255),
   category: z.enum(["ticket_sales", "merchandise", "sponsorship", "other"]),
 });
+
+// Schema para criação do pack inicial
+export const initialPackSchema = z.object({
+  club_id: z.string().uuid(),
+  server_id: z.string().uuid(),
+});

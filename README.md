@@ -207,10 +207,10 @@
 
 #### 4.1 Interface Base
 
-- [ ] Implementar layout do jogador:
-  - [ ] Bottom navigation mobile
-  - [ ] Header responsivo
-  - [ ] Sistema de navegação
+- [x] Implementar layout do jogador:
+  - [x] Bottom navigation mobile
+  - [x] Header responsivo
+  - [x] Sistema de navegação
 - [ ] Criar componentes base:
   - [ ] Cards de jogador
   - [ ] Tabelas de classificação
