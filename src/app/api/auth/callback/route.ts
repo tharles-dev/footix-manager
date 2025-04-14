@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
       console.log(role);
 
       return NextResponse.redirect(
-        new URL(role === "admin" ? "/dashboard" : "/web", requestUrl.origin)
+        new URL(role === "admin" ? "/admin" : "/web", requestUrl.origin)
       );
     }
   }
