@@ -16,7 +16,7 @@ export class ApiService {
     params?: Record<string, string>
   ): Promise<ApiResponse<T>> {
     try {
-      let url = endpoint;
+      let url = `/api/admin/${endpoint}`;
 
       if (params) {
         const queryParams = new URLSearchParams();
@@ -55,7 +55,7 @@ export class ApiService {
     body: B
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(endpoint, {
+      const response = await fetch(`/api/admin/${endpoint}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -88,7 +88,7 @@ export class ApiService {
     body: B
   ): Promise<ApiResponse<T>> {
     try {
-      const response = await fetch(`${endpoint}/${id}`, {
+      const response = await fetch(`/api/admin/${endpoint}/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -115,12 +115,9 @@ export class ApiService {
     }
   }
 
-  protected async delete(
-    endpoint: string,
-    id: string
-  ): Promise<ApiResponse<null>> {
+  protected async delete(endpoint: string, id: string): Promise<void> {
     try {
-      const response = await fetch(`${endpoint}/${id}`, {
+      const response = await fetch(`/api/admin/${endpoint}/${id}`, {
         method: "DELETE",
       });
 
@@ -131,9 +128,6 @@ export class ApiService {
           code: errorData.code || "DELETE_ERROR",
         });
       }
-
-      const data = await response.json();
-      return data;
     } catch (error) {
       if (error instanceof ApiError) throw error;
       throw new ApiError({

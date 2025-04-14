@@ -43,7 +43,7 @@ export class PlayersService extends ApiService {
       formData.append("file", file);
 
       // Usar fetch diretamente para enviar FormData
-      const response = await fetch("/api/admin/players/import", {
+      const response = await fetch("/players/import", {
         method: "POST",
         body: formData,
       });
@@ -88,7 +88,7 @@ export class PlayersService extends ApiService {
   }> {
     try {
       // Construir URL com parâmetros de consulta
-      let url = "/api/admin/players/global";
+      let url = "/players/global";
       if (params) {
         const queryParams = new URLSearchParams();
 
@@ -130,9 +130,7 @@ export class PlayersService extends ApiService {
 
   async getGlobalPlayerById(id: string): Promise<GlobalPlayer> {
     try {
-      const response = await this.get<GlobalPlayer>(
-        `/api/admin/players/global/${id}`
-      );
+      const response = await this.get<GlobalPlayer>(`/players/global/${id}`);
       return response.data;
     } catch (error) {
       console.error(`Erro ao buscar jogador global com ID ${id}:`, error);
@@ -147,7 +145,7 @@ export class PlayersService extends ApiService {
     market_value_multiplier: number;
   }): Promise<UpdateGlobalPlayersSalaryResponse> {
     return this.post<UpdateGlobalPlayersSalaryData>(
-      "/api/admin/players/global/salary",
+      "/players/global/salary",
       params
     );
   }
