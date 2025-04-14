@@ -2,22 +2,163 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@media (prefers-color-scheme: dark) {
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    /* Verde escuro base (#1E2D22) */
+    --background: 144 24% 15%;
+    --foreground: 0 0% 98%;
+    --card: 144 24% 18%;
+    --card-foreground: 0 0% 98%;
+    --popover: 144 24% 18%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 144 60% 40%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 144 30% 25%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 144 20% 20%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 144 40% 30%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 144 20% 25%;
+    --input: 144 20% 25%;
+    --ring: 144 60% 40%;
+    --radius: 0.5rem;
+
+    /* Primary Colors - Verde */
+    --primary-50: 144 60% 95%;
+    --primary-100: 144 60% 90%;
+    --primary-200: 144 60% 80%;
+    --primary-300: 144 60% 70%;
+    --primary-400: 144 60% 60%;
+    --primary-500: 144 60% 50%;
+    --primary-600: 144 60% 40%;
+    --primary-700: 144 60% 30%;
+    --primary-800: 144 60% 20%;
+    --primary-900: 144 60% 10%;
+    --primary-950: 144 60% 5%;
+
+    /* Secondary Colors - Verde mais claro */
+    --secondary-50: 144 30% 95%;
+    --secondary-100: 144 30% 90%;
+    --secondary-200: 144 30% 80%;
+    --secondary-300: 144 30% 70%;
+    --secondary-400: 144 30% 60%;
+    --secondary-500: 144 30% 50%;
+    --secondary-600: 144 30% 40%;
+    --secondary-700: 144 30% 30%;
+    --secondary-800: 144 30% 20%;
+    --secondary-900: 144 30% 10%;
+    --secondary-950: 144 30% 5%;
+
+    /* Neutral Colors - Tons de cinza */
+    --neutral-50: 0 0% 98%;
+    --neutral-100: 0 0% 95%;
+    --neutral-200: 0 0% 90%;
+    --neutral-300: 0 0% 80%;
+    --neutral-400: 0 0% 70%;
+    --neutral-500: 0 0% 60%;
+    --neutral-600: 0 0% 50%;
+    --neutral-700: 0 0% 40%;
+    --neutral-800: 0 0% 30%;
+    --neutral-900: 0 0% 20%;
+    --neutral-950: 0 0% 10%;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1),
+      0 2px 4px -2px rgb(0 0 0 / 0.1);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1),
+      0 4px 6px -4px rgb(0 0 0 / 0.1);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1),
+      0 8px 10px -6px rgb(0 0 0 / 0.1);
+
+    /* Fontes */
+    --font-sans: var(--font-exo2);
+  }
+
+  .dark {
+    /* Verde escuro base (#1E2D22) - Modo escuro */
+    --background: 144 24% 10%;
+    --foreground: 0 0% 98%;
+    --card: 144 24% 12%;
+    --card-foreground: 0 0% 98%;
+    --popover: 144 24% 12%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 144 60% 45%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 144 30% 20%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 144 20% 15%;
+    --muted-foreground: 0 0% 70%;
+    --accent: 144 40% 25%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 144 20% 20%;
+    --input: 144 20% 20%;
+    --ring: 144 60% 45%;
+
+    /* Primary Colors - Verde - Dark Mode */
+    --primary-50: 144 60% 5%;
+    --primary-100: 144 60% 10%;
+    --primary-200: 144 60% 20%;
+    --primary-300: 144 60% 30%;
+    --primary-400: 144 60% 40%;
+    --primary-500: 144 60% 50%;
+    --primary-600: 144 60% 60%;
+    --primary-700: 144 60% 70%;
+    --primary-800: 144 60% 80%;
+    --primary-900: 144 60% 90%;
+    --primary-950: 144 60% 95%;
+
+    /* Secondary Colors - Verde mais claro - Dark Mode */
+    --secondary-50: 144 30% 5%;
+    --secondary-100: 144 30% 10%;
+    --secondary-200: 144 30% 20%;
+    --secondary-300: 144 30% 30%;
+    --secondary-400: 144 30% 40%;
+    --secondary-500: 144 30% 50%;
+    --secondary-600: 144 30% 60%;
+    --secondary-700: 144 30% 70%;
+    --secondary-800: 144 30% 80%;
+    --secondary-900: 144 30% 90%;
+    --secondary-950: 144 30% 95%;
+
+    /* Neutral Colors - Tons de cinza - Dark Mode */
+    --neutral-50: 0 0% 10%;
+    --neutral-100: 0 0% 20%;
+    --neutral-200: 0 0% 30%;
+    --neutral-300: 0 0% 40%;
+    --neutral-400: 0 0% 50%;
+    --neutral-500: 0 0% 60%;
+    --neutral-600: 0 0% 70%;
+    --neutral-700: 0 0% 80%;
+    --neutral-800: 0 0% 90%;
+    --neutral-900: 0 0% 95%;
+    --neutral-950: 0 0% 98%;
+
+    /* Shadows - Dark Mode */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4),
+      0 2px 4px -2px rgb(0 0 0 / 0.4);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4),
+      0 4px 6px -4px rgb(0 0 0 / 0.4);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.4),
+      0 8px 10px -6px rgb(0 0 0 / 0.4);
   }
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    font-family: var(--font-sans);
+  }
 }
 
 @layer utilities {

@@ -13,10 +13,16 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
-    setIsMobileMenuOpen((prev) => !prev);
+    console.log("Alterando estado do menu mobile...");
+    setIsMobileMenuOpen((prev) => {
+      console.log("Estado anterior:", prev);
+      console.log("Novo estado:", !prev);
+      return !prev;
+    });
   };
 
   const closeMobileMenu = () => {
+    console.log("Fechando menu mobile...");
     setIsMobileMenuOpen(false);
   };
 

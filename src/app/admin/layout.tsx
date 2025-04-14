@@ -9,9 +9,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
       <div className="min-h-screen bg-background">
         <div className="flex h-screen">
           {/* Sidebar - oculta em mobile */}
-          <div className="hidden md:flex">
-            <AdminSidebar />
-          </div>
+          <AdminSidebar />
 
           {/* Conteúdo principal */}
           <div className="flex-1 flex flex-col overflow-hidden">

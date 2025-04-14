@@ -10,14 +10,43 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAdmin } from "@/contexts/admin-context";
 import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 export function AdminHeader() {
-  const { toggleMobileMenu } = useAdmin();
+  const { toggleMobileMenu, isMobileMenuOpen } = useAdmin();
   const router = useRouter();
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const handleLogout = () => {
-    // TODO: Implementar logout com Supabase
-    router.push("/login");
+  const handleMobileMenuToggle = () => {
+    console.log("Menu mobile antes:", isMobileMenuOpen);
+    toggleMobileMenu();
+    console.log("Menu mobile depois:", !isMobileMenuOpen);
+  };
+
+  const handleLogout = async () => {
+    try {
+      setIsLoggingOut(true);
+
+      // Fazer logout no Supabase
+      const supabase = createClient();
+      await supabase.auth.signOut();
+
+      // Chamar o endpoint de logout para limpar cookies
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      // Redirecionar para a página de login
+      router.push("/auth/login");
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      setIsLoggingOut(false);
+    }
   };
 
   return (
@@ -27,7 +56,7 @@ export function AdminHeader() {
         variant="ghost"
         size="icon"
         className="md:hidden"
-        onClick={toggleMobileMenu}
+        onClick={handleMobileMenuToggle}
       >
         <Menu className="h-5 w-5" />
       </Button>
@@ -39,6 +68,7 @@ export function AdminHeader() {
 
       {/* Ações do usuário */}
       <div className="flex items-center space-x-4">
+        <ThemeToggle />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
@@ -54,8 +84,9 @@ export function AdminHeader() {
             <DropdownMenuItem
               className="text-destructive"
               onClick={handleLogout}
+              disabled={isLoggingOut}
             >
-              Sair
+              {isLoggingOut ? "Saindo..." : "Sair"}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
