@@ -78,6 +78,32 @@ export async function PUT(
       });
     }
 
+    // Verifica se o cobrador de falta está entre os jogadores selecionados
+    if (
+      data.free_kick_taker_id &&
+      ![...data.starting_ids, ...data.bench_ids].includes(
+        data.free_kick_taker_id
+      )
+    ) {
+      throw new ApiError({
+        message:
+          "O cobrador de falta deve estar entre os jogadores selecionados",
+        code: "INVALID_FREE_KICK_TAKER",
+      });
+    }
+
+    // Verifica se o cobrador de pênalti está entre os jogadores selecionados
+    if (
+      data.penalty_taker_id &&
+      ![...data.starting_ids, ...data.bench_ids].includes(data.penalty_taker_id)
+    ) {
+      throw new ApiError({
+        message:
+          "O cobrador de pênalti deve estar entre os jogadores selecionados",
+        code: "INVALID_PENALTY_TAKER",
+      });
+    }
+
     // Atualiza a tática
     const { error } = await supabase.from("club_tactics").upsert({
       club_id: params.id,
@@ -85,6 +111,8 @@ export async function PUT(
       starting_ids: data.starting_ids,
       bench_ids: data.bench_ids,
       captain_id: data.captain_id,
+      free_kick_taker_id: data.free_kick_taker_id,
+      penalty_taker_id: data.penalty_taker_id,
     });
 
     if (error) {
@@ -143,6 +171,8 @@ export async function GET(
         starting_ids,
         bench_ids,
         captain_id,
+        free_kick_taker_id,
+        penalty_taker_id,
         starting:server_players!starting_ids(
           id,
           name,

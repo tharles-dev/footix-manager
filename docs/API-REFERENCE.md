@@ -138,7 +138,9 @@
   "formation": "4-4-2",
   "starting_ids": ["uuid1", "uuid2", ...], // 11 jogadores
   "bench_ids": ["uuid1", "uuid2", ...], // 5-7 jogadores
-  "captain_id": "uuid" // deve estar entre titulares
+  "captain_id": "uuid", // deve estar entre titulares
+  "free_kick_taker_id": "uuid", // opcional, deve estar entre jogadores selecionados
+  "penalty_taker_id": "uuid" // opcional, deve estar entre jogadores selecionados
 }
 ```
 
@@ -147,6 +149,8 @@
   - Titulares: exatamente 11 jogadores
   - Reservas: 5-7 jogadores
   - Capitão: deve estar entre titulares
+  - Cobrador de falta: deve estar entre jogadores selecionados (opcional)
+  - Cobrador de pênalti: deve estar entre jogadores selecionados (opcional)
   - Todos os jogadores devem pertencer ao clube
 - Rate Limit: 10 requisições/minuto (PUT), 30 requisições/minuto (GET)
 - Cache: 5 minutos (GET)
@@ -158,6 +162,8 @@
   - Titulares
   - Reservas
   - Capitão
+  - Cobrador de falta (se definido)
+  - Cobrador de pênalti (se definido)
 - Campos dos jogadores:
   - id, name, position
   - attributes (força, velocidade, etc)

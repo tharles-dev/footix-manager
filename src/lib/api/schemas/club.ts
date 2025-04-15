@@ -11,10 +11,12 @@ export const createClubSchema = z.object({
 
 // Schema para atualização de tática
 export const updateTacticsSchema = z.object({
-  formation: z.string().regex(/^\d{1,2}-\d{1,2}-\d{1,2}$/),
-  starting_ids: z.array(z.string().uuid()).min(11).max(11),
-  bench_ids: z.array(z.string().uuid()).min(5).max(7),
+  formation: z.string(),
+  starting_ids: z.array(z.string().uuid()),
+  bench_ids: z.array(z.string().uuid()),
   captain_id: z.string().uuid(),
+  free_kick_taker_id: z.string().uuid().optional(),
+  penalty_taker_id: z.string().uuid().optional(),
 });
 
 // Schema para contratação de jogador
