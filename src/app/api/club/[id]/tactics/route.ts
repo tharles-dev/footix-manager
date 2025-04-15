@@ -15,6 +15,15 @@ export async function PUT(
     const cookieStore = cookies();
     const supabase = createServerClient(cookieStore);
 
+    const { data: user } = await supabase.auth.getUser();
+
+    if (!user) {
+      throw new ApiError({
+        message: "Usuário não autenticado",
+        code: "UNAUTHORIZED",
+      });
+    }
+
     // Verifica rate limit
     await checkRateLimit("club-tactics-update", 10, 60); // 10 requisições por minuto
 
@@ -25,15 +34,23 @@ export async function PUT(
     // Verifica se o clube existe e pertence ao usuário
     const { data: club } = await supabase
       .from("clubs")
-      .select("id")
+      .select("id, server_id")
       .eq("id", params.id)
-      .eq("user_id", request.headers.get("user-id"))
+      .eq("user_id", user.user?.id)
       .single();
 
     if (!club) {
       throw new ApiError({
         message: "Clube não encontrado ou não pertence a você",
         code: "CLUB_NOT_FOUND",
+      });
+    }
+
+    // Verifica se o servidor especificado corresponde ao do clube
+    if (club.server_id !== data.server_id) {
+      throw new ApiError({
+        message: "O servidor especificado não corresponde ao do clube",
+        code: "INVALID_SERVER",
       });
     }
 
@@ -113,9 +130,13 @@ export async function PUT(
       captain_id: data.captain_id,
       free_kick_taker_id: data.free_kick_taker_id,
       penalty_taker_id: data.penalty_taker_id,
+      play_style: data.play_style,
+      marking: data.marking,
+      server_id: data.server_id,
     });
 
     if (error) {
+      console.log("error", error);
       throw new ApiError({
         message: "Erro ao atualizar tática",
         code: "TACTICS_UPDATE_FAILED",
@@ -162,8 +183,8 @@ export async function GET(
       return NextResponse.json(cached);
     }
 
-    // Busca a tática
-    const { data: tactics, error } = await supabase
+    // Buscar táticas salvas
+    const { data: tactics, error: tacticsError } = await supabase
       .from("club_tactics")
       .select(
         `
@@ -173,35 +194,60 @@ export async function GET(
         captain_id,
         free_kick_taker_id,
         penalty_taker_id,
-        starting:server_players!starting_ids(
-          id,
-          name,
-          position,
-          attributes
-        ),
-        bench:server_players!bench_ids(
-          id,
-          name,
-          position,
-          attributes
-        )
+        play_style,
+        marking
       `
       )
       .eq("club_id", params.id)
       .single();
 
-    if (error) {
-      throw new ApiError({
-        message: "Erro ao buscar tática",
-        code: "TACTICS_FETCH_FAILED",
-        details: error,
-      });
+    if (tacticsError) {
+      console.error("Erro ao buscar táticas:", tacticsError);
+      return NextResponse.json(
+        { error: "Erro ao buscar táticas" },
+        { status: 500 }
+      );
     }
 
-    // Cache por 5 minutos
-    await setCachedData(`club:${params.id}:tactics`, tactics, 300);
+    // Buscar jogadores titulares
+    const { data: startingPlayers, error: startingError } = await supabase
+      .from("server_players")
+      .select("*")
+      .in("id", tactics?.starting_ids || []);
 
-    return NextResponse.json(tactics);
+    if (startingError) {
+      console.error("Erro ao buscar jogadores titulares:", startingError);
+      return NextResponse.json(
+        { error: "Erro ao buscar jogadores titulares" },
+        { status: 500 }
+      );
+    }
+
+    // Buscar jogadores reservas
+    const { data: benchPlayers, error: benchError } = await supabase
+      .from("server_players")
+      .select("*")
+      .in("id", tactics?.bench_ids || []);
+
+    if (benchError) {
+      console.error("Erro ao buscar jogadores reservas:", benchError);
+      return NextResponse.json(
+        { error: "Erro ao buscar jogadores reservas" },
+        { status: 500 }
+      );
+    }
+
+    // Combinar os resultados
+    const response = {
+      ...tactics,
+      startingPlayers: startingPlayers || [],
+      benchPlayers: benchPlayers || [],
+    };
+
+    // Cachear por 5 minutos
+    await setCachedData(`club:${params.id}:tactics`, response, 300);
+
+    return NextResponse.json(response);
   } catch (error) {
     if (error instanceof ApiError) {
       return NextResponse.json(

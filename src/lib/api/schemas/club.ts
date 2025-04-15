@@ -17,6 +17,9 @@ export const updateTacticsSchema = z.object({
   captain_id: z.string().uuid(),
   free_kick_taker_id: z.string().uuid().optional(),
   penalty_taker_id: z.string().uuid().optional(),
+  play_style: z.enum(["equilibrado", "contra-ataque", "ataque total"]),
+  marking: z.enum(["leve", "pesada", "muito pesada"]),
+  server_id: z.string().uuid(),
 });
 
 // Schema para contratação de jogador

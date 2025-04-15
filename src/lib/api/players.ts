@@ -5,6 +5,8 @@ export interface Player {
   nationality: string;
   position: string;
   overall: number;
+  form?: number;
+  morale?: number;
 }
 
 export async function getSquadPlayers(clubId: string): Promise<Player[]> {

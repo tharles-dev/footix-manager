@@ -15,9 +15,10 @@ import {
 
 interface SquadListProps {
   clubId: string;
+  serverId: string;
 }
 
-function SquadList({ clubId }: SquadListProps) {
+function SquadList({ clubId, serverId }: SquadListProps) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showTacticsEditor, setShowTacticsEditor] = useState(false);
 
@@ -60,15 +61,32 @@ function SquadList({ clubId }: SquadListProps) {
 
   const handleSaveTactics = async (tactics: {
     formation: string;
-    startingPlayerIds: string[];
-    benchPlayerIds: string[];
-    captainId?: string;
-    freeKickTakerId?: string;
-    penaltyTakerId?: string;
+    starting_ids: string[];
+    bench_ids: string[];
+    captain_id?: string;
+    free_kick_taker_id?: string;
+    penalty_taker_id?: string;
+    play_style: "equilibrado" | "contra-ataque" | "ataque total";
+    marking: "leve" | "pesada" | "muito pesada";
+    server_id: string;
   }) => {
-    // TODO: Implementar salvamento das táticas
-    console.log("Táticas salvas:", tactics);
-    setShowTacticsEditor(false);
+    try {
+      const response = await fetch(`/api/club/${clubId}/tactics`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(tactics),
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao salvar táticas");
+      }
+
+      console.log("Táticas salvas com sucesso");
+    } catch (error) {
+      console.error("Erro ao salvar táticas:", error);
+    }
   };
 
   return (
@@ -88,7 +106,9 @@ function SquadList({ clubId }: SquadListProps) {
             </DialogHeader>
             <TacticsEditor
               clubId={clubId}
-              formation="4-4-2"
+              players={players}
+              serverId={serverId}
+              initialFormation="4-4-2"
               startingPlayerIds={[]}
               benchPlayerIds={[]}
               onSave={handleSaveTactics}
@@ -116,10 +136,10 @@ function SquadListSkeleton() {
   );
 }
 
-export function SquadListWrapper({ clubId }: SquadListProps) {
+export function SquadListWrapper({ clubId, serverId }: SquadListProps) {
   return (
     <Suspense fallback={<SquadListSkeleton />}>
-      <SquadList clubId={clubId} />
+      <SquadList clubId={clubId} serverId={serverId} />
     </Suspense>
   );
 }

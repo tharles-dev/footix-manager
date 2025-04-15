@@ -247,7 +247,7 @@ export default function DashboardPage() {
 
             <TabsContent value="squad" className="mt-4">
               {hasPlayers ? (
-                <SquadListWrapper clubId={club.id} />
+                <SquadListWrapper clubId={club.id} serverId={club.server_id} />
               ) : (
                 <Card className="p-8 text-center">
                   <h3 className="text-lg font-semibold mb-4">
