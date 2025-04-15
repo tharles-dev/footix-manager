@@ -31,6 +31,12 @@ export async function PUT(
     const body = await request.json();
     const data = validateData(updateTacticsSchema, body);
 
+    // Extrair apenas os IDs para validação
+    const playerIds = [
+      ...data.starting_ids.map((id) => id.split(":")[0]),
+      ...data.bench_ids.map((id) => id.split(":")[0]),
+    ];
+
     // Verifica se o clube existe e pertence ao usuário
     const { data: club } = await supabase
       .from("clubs")
@@ -75,20 +81,22 @@ export async function PUT(
       `
       )
       .eq("club_id", params.id)
-      .in("id", [...data.starting_ids, ...data.bench_ids]);
+      .in("id", playerIds);
 
-    if (
-      !players ||
-      players.length !== data.starting_ids.length + data.bench_ids.length
-    ) {
+    if (!players || players.length !== playerIds.length) {
       throw new ApiError({
         message: "Um ou mais jogadores não pertencem ao clube",
         code: "INVALID_PLAYERS",
       });
     }
 
+    // Extrair apenas os IDs dos titulares para verificar o capitão
+    const startingPlayerIdsOnly = data.starting_ids.map(
+      (id) => id.split(":")[0]
+    );
+
     // Verifica se o capitão está entre os titulares
-    if (!data.starting_ids.includes(data.captain_id)) {
+    if (!startingPlayerIdsOnly.includes(data.captain_id)) {
       throw new ApiError({
         message: "O capitão deve estar entre os titulares",
         code: "INVALID_CAPTAIN",
@@ -98,9 +106,7 @@ export async function PUT(
     // Verifica se o cobrador de falta está entre os jogadores selecionados
     if (
       data.free_kick_taker_id &&
-      ![...data.starting_ids, ...data.bench_ids].includes(
-        data.free_kick_taker_id
-      )
+      !playerIds.includes(data.free_kick_taker_id)
     ) {
       throw new ApiError({
         message:
@@ -110,10 +116,7 @@ export async function PUT(
     }
 
     // Verifica se o cobrador de pênalti está entre os jogadores selecionados
-    if (
-      data.penalty_taker_id &&
-      ![...data.starting_ids, ...data.bench_ids].includes(data.penalty_taker_id)
-    ) {
+    if (data.penalty_taker_id && !playerIds.includes(data.penalty_taker_id)) {
       throw new ApiError({
         message:
           "O cobrador de pênalti deve estar entre os jogadores selecionados",
@@ -121,12 +124,12 @@ export async function PUT(
       });
     }
 
-    // Atualiza a tática
+    // Atualiza a tática com os dados completos
     const { error } = await supabase.from("club_tactics").upsert({
       club_id: params.id,
       formation: data.formation,
-      starting_ids: data.starting_ids,
-      bench_ids: data.bench_ids,
+      starting_ids: data.starting_ids, // Agora contém "id:POSITION-INDEX"
+      bench_ids: data.bench_ids, // Agora contém "id:BENCH-INDEX"
       captain_id: data.captain_id,
       free_kick_taker_id: data.free_kick_taker_id,
       penalty_taker_id: data.penalty_taker_id,
@@ -209,11 +212,15 @@ export async function GET(
       );
     }
 
+    // Extrair apenas os IDs dos jogadores titulares
+    const startingPlayerIds =
+      tactics?.starting_ids?.map((id: string) => id.split(":")[0]) || [];
+
     // Buscar jogadores titulares
     const { data: startingPlayers, error: startingError } = await supabase
       .from("server_players")
       .select("*")
-      .in("id", tactics?.starting_ids || []);
+      .in("id", startingPlayerIds);
 
     if (startingError) {
       console.error("Erro ao buscar jogadores titulares:", startingError);
@@ -223,11 +230,15 @@ export async function GET(
       );
     }
 
+    // Extrair apenas os IDs dos jogadores reservas
+    const benchPlayerIds =
+      tactics?.bench_ids?.map((id: string) => id.split(":")[0]) || [];
+
     // Buscar jogadores reservas
     const { data: benchPlayers, error: benchError } = await supabase
       .from("server_players")
       .select("*")
-      .in("id", tactics?.bench_ids || []);
+      .in("id", benchPlayerIds);
 
     if (benchError) {
       console.error("Erro ao buscar jogadores reservas:", benchError);

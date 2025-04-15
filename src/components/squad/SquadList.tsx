@@ -18,9 +18,23 @@ interface SquadListProps {
   serverId: string;
 }
 
+interface Tactics {
+  formation: string;
+  starting_ids: string[];
+  bench_ids: string[];
+  captain_id?: string;
+  free_kick_taker_id?: string;
+  penalty_taker_id?: string;
+  play_style: "equilibrado" | "contra-ataque" | "ataque total";
+  marking: "leve" | "pesada" | "muito pesada";
+  startingPlayers?: Player[];
+  benchPlayers?: Player[];
+}
+
 function SquadList({ clubId, serverId }: SquadListProps) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showTacticsEditor, setShowTacticsEditor] = useState(false);
+  const [tactics, setTactics] = useState<Tactics | null>(null);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -59,6 +73,24 @@ function SquadList({ clubId, serverId }: SquadListProps) {
     fetchPlayers();
   }, [clubId]);
 
+  useEffect(() => {
+    const fetchTactics = async () => {
+      try {
+        const response = await fetch(`/api/club/${clubId}/tactics`);
+        if (response.ok) {
+          const tacticsData = await response.json();
+          setTactics(tacticsData);
+        }
+      } catch (error) {
+        console.error("Erro ao buscar táticas:", error);
+      }
+    };
+
+    if (players.length > 0) {
+      fetchTactics();
+    }
+  }, [clubId, players]);
+
   const handleSaveTactics = async (tactics: {
     formation: string;
     starting_ids: string[];
@@ -84,9 +116,33 @@ function SquadList({ clubId, serverId }: SquadListProps) {
       }
 
       console.log("Táticas salvas com sucesso");
+
+      // Atualizar as táticas locais após salvar
+      const updatedTactics = await response.json();
+      setTactics(updatedTactics);
     } catch (error) {
       console.error("Erro ao salvar táticas:", error);
     }
+  };
+
+  // Preparar os dados para o TacticsEditor
+  const getTacticsEditorProps = () => {
+    if (!tactics) {
+      return {
+        initialFormation: "4-4-2",
+        startingPlayerIds: [],
+        benchPlayerIds: [],
+      };
+    }
+
+    return {
+      initialFormation: tactics.formation || "4-4-2",
+      startingPlayerIds: tactics.starting_ids || [],
+      benchPlayerIds: tactics.bench_ids || [],
+      captainId: tactics.captain_id,
+      freeKickTakerId: tactics.free_kick_taker_id,
+      penaltyTakerId: tactics.penalty_taker_id,
+    };
   };
 
   return (
@@ -108,10 +164,8 @@ function SquadList({ clubId, serverId }: SquadListProps) {
               clubId={clubId}
               players={players}
               serverId={serverId}
-              initialFormation="4-4-2"
-              startingPlayerIds={[]}
-              benchPlayerIds={[]}
               onSave={handleSaveTactics}
+              {...getTacticsEditorProps()}
             />
           </DialogContent>
         </Dialog>

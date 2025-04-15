@@ -65,18 +65,34 @@ export function TacticsEditor({
       const initialSelectedPlayers: { [key: string]: Player } = {};
 
       // Mapeia os jogadores titulares para as posições do campo
-      startingPlayerIds.forEach((playerId, index) => {
+      startingPlayerIds.forEach((playerInfo) => {
+        // Verificar se o formato é "id:posição" ou apenas "id"
+        const [playerId, position] = playerInfo.includes(":")
+          ? playerInfo.split(":")
+          : [playerInfo, ""];
+
         const player = players.find((p) => p.id === playerId);
         if (player) {
-          initialSelectedPlayers[`POSITION-${index}`] = player;
+          // Se tiver posição específica, use-a, caso contrário, use o índice
+          const positionKey =
+            position || `POSITION-${startingPlayerIds.indexOf(playerInfo)}`;
+          initialSelectedPlayers[positionKey] = player;
         }
       });
 
       // Mapeia os jogadores reservas para as posições de reserva
-      benchPlayerIds.forEach((playerId, index) => {
+      benchPlayerIds.forEach((playerInfo) => {
+        // Verificar se o formato é "id:posição" ou apenas "id"
+        const [playerId, position] = playerInfo.includes(":")
+          ? playerInfo.split(":")
+          : [playerInfo, ""];
+
         const player = players.find((p) => p.id === playerId);
         if (player) {
-          initialSelectedPlayers[`BENCH-${index}`] = player;
+          // Se tiver posição específica, use-a, caso contrário, use o índice
+          const positionKey =
+            position || `BENCH-${benchPlayerIds.indexOf(playerInfo)}`;
+          initialSelectedPlayers[positionKey] = player;
         }
       });
 
@@ -102,18 +118,21 @@ export function TacticsEditor({
   ]);
 
   const handleSave = () => {
-    // Obter os jogadores titulares (posições do campo)
+    // Obter os jogadores titulares com suas posições específicas
     const startingPlayerIds = Object.entries(selectedPlayers)
-      .filter(([key]) => {
-        // Verifica se a chave contém uma posição de campo (não é reserva)
-        return !key.startsWith("BENCH-");
-      })
-      .map(([, player]) => player.id);
+      .filter(([key]) => !key.startsWith("BENCH-"))
+      .map(([key, player]) => {
+        // key já está no formato "POSITION-INDEX"
+        return `${player.id}:${key}`;
+      });
 
-    // Obter os jogadores reservas
+    // Obter os jogadores reservas com suas posições específicas
     const benchPlayerIds = Object.entries(selectedPlayers)
       .filter(([key]) => key.startsWith("BENCH-"))
-      .map(([, player]) => player.id);
+      .map(([key, player]) => {
+        // key já está no formato "BENCH-INDEX"
+        return `${player.id}:${key}`;
+      });
 
     onSave({
       formation,
@@ -260,6 +279,7 @@ export function TacticsEditor({
           <Label>Estilo de Jogo</Label>
           <Select
             value={playStyle}
+            defaultValue={playStyle}
             onValueChange={(value: PlayStyle) => setPlayStyle(value)}
           >
             <SelectTrigger>
@@ -277,6 +297,7 @@ export function TacticsEditor({
           <Label>Marcação</Label>
           <Select
             value={marking}
+            defaultValue={marking}
             onValueChange={(value: Marking) => setMarking(value)}
           >
             <SelectTrigger>

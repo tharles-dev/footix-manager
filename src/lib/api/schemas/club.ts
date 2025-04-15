@@ -12,14 +12,27 @@ export const createClubSchema = z.object({
 // Schema para atualização de tática
 export const updateTacticsSchema = z.object({
   formation: z.string(),
-  starting_ids: z.array(z.string().uuid()),
-  bench_ids: z.array(z.string().uuid()),
+  starting_ids: z.array(
+    z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:[A-Z]+-\d+$/
+      )
+  ),
+  bench_ids: z.array(
+    z
+      .string()
+      .regex(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:BENCH-\d+$/
+      )
+  ),
   captain_id: z.string().uuid(),
   free_kick_taker_id: z.string().uuid().optional(),
   penalty_taker_id: z.string().uuid().optional(),
   play_style: z.enum(["equilibrado", "contra-ataque", "ataque total"]),
   marking: z.enum(["leve", "pesada", "muito pesada"]),
   server_id: z.string().uuid(),
+  club_id: z.string().uuid(),
 });
 
 // Schema para contratação de jogador
