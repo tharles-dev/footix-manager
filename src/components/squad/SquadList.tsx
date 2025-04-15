@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/use-toast";
 import { Loader2 } from "lucide-react";
+import { PiStrategyBold } from "react-icons/pi";
 
 interface SquadListProps {
   clubId: string;
@@ -107,17 +108,18 @@ function SquadList({ clubId, serverId }: SquadListProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="fixed bottom-20 right-4 z-50">
         <Dialog open={showTacticsEditor} onOpenChange={setShowTacticsEditor}>
           <DialogTrigger asChild>
-            <Button disabled={isSaving}>
+            <Button
+              size="lg"
+              className="rounded-full w-14 h-14 p-0 shadow-lg hover:shadow-xl transition-all duration-200 bg-[#b1531d] hover:bg-[#b1531d]/90"
+              disabled={isSaving}
+            >
               {isSaving ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
+                <Loader2 className="h-6 w-6 animate-spin" />
               ) : (
-                "Configurar Tática"
+                <PiStrategyBold className="h-6 w-6" />
               )}
             </Button>
           </DialogTrigger>

@@ -42,7 +42,7 @@ export function PlayerCard({
       className={cn(
         "p-4 flex items-center justify-between hover:bg-muted/50 transition-colors",
         "animate-in fade-in slide-in-from-bottom-5",
-        "duration-300"
+        "duration-200"
       )}
       style={{
         animationDelay: `${index * 100}ms`,
