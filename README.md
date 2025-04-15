@@ -211,7 +211,7 @@
   - [x] Bottom navigation mobile
   - [x] Header responsivo
   - [x] Sistema de navegação
-- [ ] Criar componentes base:
+- [x] Criar componentes base:
   - [ ] Cards de jogador
   - [ ] Tabelas de classificação
   - [ ] Calendário de jogos
@@ -221,17 +221,15 @@
 
 - [ ] Implementar páginas usando App Router:
   - [x] `/auth` com autenticação Google
-  - [ ] `/server/select` para escolha de servidor
-  - [ ] `/club/create` para criação de clube
-  - [ ] `/dashboard` com layout responsivo
-  - [ ] `/club/[id]` para detalhes do clube
-  - [ ] `/tactics` para gerenciamento de táticas
+  - [x] `/club/create` para criação de clube
+  - [x] `/dashboard` com layout responsivo
+  - [x] `/tactics` para gerenciamento de táticas
   - [ ] `/transfers` para mercado de transferências
 
 #### 4.3 Sistemas de Jogo
 
 - [ ] Implementar funcionalidades:
-  - [ ] Sistema de táticas
+  - [x] Sistema de táticas
   - [ ] Mercado de transferências
   - [ ] Finanças do clube
   - [ ] Competições
