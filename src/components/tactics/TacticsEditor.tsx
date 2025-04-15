@@ -10,6 +10,8 @@ import {
 import { FormationField } from "./FormationField";
 import { Player } from "@/lib/api/players";
 import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Loader2 } from "lucide-react";
 
 type PlayStyle = "equilibrado" | "contra-ataque" | "ataque total";
 type Marking = "leve" | "pesada" | "muito pesada";
@@ -29,13 +31,18 @@ interface TacticsEditorProps {
     marking: Marking;
     server_id: string;
     club_id: string;
-  }) => void;
-  initialFormation?: string;
-  startingPlayerIds?: string[];
-  benchPlayerIds?: string[];
-  captainId?: string;
-  freeKickTakerId?: string;
-  penaltyTakerId?: string;
+  }) => Promise<void>;
+}
+
+interface Tactics {
+  formation: string;
+  starting_ids: string[];
+  bench_ids: string[];
+  captain_id?: string;
+  free_kick_taker_id?: string;
+  penalty_taker_id?: string;
+  play_style: "equilibrado" | "contra-ataque" | "ataque total";
+  marking: "leve" | "pesada" | "muito pesada";
 }
 
 export function TacticsEditor({
@@ -43,112 +50,166 @@ export function TacticsEditor({
   serverId,
   clubId,
   onSave,
-  initialFormation = "4-4-2",
-  startingPlayerIds = [],
-  benchPlayerIds = [],
-  captainId,
-  freeKickTakerId,
-  penaltyTakerId,
 }: TacticsEditorProps) {
-  const [formation, setFormation] = useState(initialFormation);
+  const [formation, setFormation] = useState("4-4-2");
   const [selectedPlayers, setSelectedPlayers] = useState<{
     [key: string]: Player;
   }>({});
   const [captain, setCaptain] = useState<Player | null>(null);
   const [freeKickTaker, setFreeKickTaker] = useState<Player | null>(null);
   const [penaltyTaker, setPenaltyTaker] = useState<Player | null>(null);
-  const [playStyle, setPlayStyle] = useState<PlayStyle>("equilibrado");
-  const [marking, setMarking] = useState<Marking>("leve");
+  const [playStyle, setPlayStyle] =
+    useState<Tactics["play_style"]>("equilibrado");
+  const [marking, setMarking] = useState<Tactics["marking"]>("leve");
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Limpa os jogadores selecionados quando a formação é alterada
+  useEffect(() => {
+    setSelectedPlayers({});
+    setCaptain(null);
+    setFreeKickTaker(null);
+    setPenaltyTaker(null);
+  }, [formation]);
 
   useEffect(() => {
+    const fetchTactics = async () => {
+      try {
+        setIsLoading(true);
+        const response = await fetch(`/api/club/${clubId}/tactics`);
+        if (response.ok) {
+          const tacticsData: Tactics = await response.json();
+
+          // Atualizar os estados com os dados carregados
+          if (tacticsData) {
+            setFormation(tacticsData.formation || "4-4-2");
+            setPlayStyle(tacticsData.play_style || "equilibrado");
+            setMarking(tacticsData.marking || "leve");
+
+            // Mapear jogadores titulares
+            const initialSelectedPlayers: { [key: string]: Player } = {};
+
+            // Mapeia os jogadores titulares para as posições do campo
+            tacticsData.starting_ids?.forEach((playerInfo: string) => {
+              const [playerId, position] = playerInfo.includes(":")
+                ? playerInfo.split(":")
+                : [playerInfo, ""];
+
+              const player = players.find((p) => p.id === playerId);
+              if (player) {
+                const positionKey =
+                  position ||
+                  `POSITION-${tacticsData.starting_ids.indexOf(playerInfo)}`;
+                initialSelectedPlayers[positionKey] = player;
+              }
+            });
+
+            // Mapeia os jogadores reservas para as posições de reserva
+            tacticsData.bench_ids?.forEach((playerInfo: string) => {
+              const [playerId, position] = playerInfo.includes(":")
+                ? playerInfo.split(":")
+                : [playerInfo, ""];
+
+              const player = players.find((p) => p.id === playerId);
+              if (player) {
+                const positionKey =
+                  position ||
+                  `BENCH-${tacticsData.bench_ids.indexOf(playerInfo)}`;
+                initialSelectedPlayers[positionKey] = player;
+              }
+            });
+
+            setSelectedPlayers(initialSelectedPlayers);
+
+            // Definir capitão, cobrador de falta e pênalti
+            if (tacticsData.captain_id) {
+              setCaptain(
+                players.find((p) => p.id === tacticsData.captain_id) || null
+              );
+            }
+            if (tacticsData.free_kick_taker_id) {
+              setFreeKickTaker(
+                players.find((p) => p.id === tacticsData.free_kick_taker_id) ||
+                  null
+              );
+            }
+            if (tacticsData.penalty_taker_id) {
+              setPenaltyTaker(
+                players.find((p) => p.id === tacticsData.penalty_taker_id) ||
+                  null
+              );
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Erro ao buscar táticas:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (players && players.length > 0) {
-      const initialSelectedPlayers: { [key: string]: Player } = {};
-
-      // Mapeia os jogadores titulares para as posições do campo
-      startingPlayerIds.forEach((playerInfo) => {
-        // Verificar se o formato é "id:posição" ou apenas "id"
-        const [playerId, position] = playerInfo.includes(":")
-          ? playerInfo.split(":")
-          : [playerInfo, ""];
-
-        const player = players.find((p) => p.id === playerId);
-        if (player) {
-          // Se tiver posição específica, use-a, caso contrário, use o índice
-          const positionKey =
-            position || `POSITION-${startingPlayerIds.indexOf(playerInfo)}`;
-          initialSelectedPlayers[positionKey] = player;
-        }
-      });
-
-      // Mapeia os jogadores reservas para as posições de reserva
-      benchPlayerIds.forEach((playerInfo) => {
-        // Verificar se o formato é "id:posição" ou apenas "id"
-        const [playerId, position] = playerInfo.includes(":")
-          ? playerInfo.split(":")
-          : [playerInfo, ""];
-
-        const player = players.find((p) => p.id === playerId);
-        if (player) {
-          // Se tiver posição específica, use-a, caso contrário, use o índice
-          const positionKey =
-            position || `BENCH-${benchPlayerIds.indexOf(playerInfo)}`;
-          initialSelectedPlayers[positionKey] = player;
-        }
-      });
-
-      setSelectedPlayers(initialSelectedPlayers);
-
-      if (captainId) {
-        setCaptain(players.find((p) => p.id === captainId) || null);
-      }
-      if (freeKickTakerId) {
-        setFreeKickTaker(players.find((p) => p.id === freeKickTakerId) || null);
-      }
-      if (penaltyTakerId) {
-        setPenaltyTaker(players.find((p) => p.id === penaltyTakerId) || null);
-      }
+      fetchTactics();
     }
-  }, [
-    players,
-    startingPlayerIds,
-    benchPlayerIds,
-    captainId,
-    freeKickTakerId,
-    penaltyTakerId,
-  ]);
+  }, [players, clubId]);
 
-  const handleSave = () => {
-    // Obter os jogadores titulares com suas posições específicas
-    const startingPlayerIds = Object.entries(selectedPlayers)
-      .filter(([key]) => !key.startsWith("BENCH-"))
-      .map(([key, player]) => {
-        // key já está no formato "POSITION-INDEX"
-        return `${player.id}:${key}`;
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+
+      // Obter os jogadores titulares com suas posições específicas
+      const startingPlayerIds = Object.entries(selectedPlayers)
+        .filter(([key]) => !key.startsWith("BENCH-"))
+        .map(([key, player]) => {
+          // key já está no formato "POSITION-INDEX"
+          return `${player.id}:${key}`;
+        });
+
+      // Obter os jogadores reservas com suas posições específicas
+      const benchPlayerIds = Object.entries(selectedPlayers)
+        .filter(([key]) => key.startsWith("BENCH-"))
+        .map(([key, player]) => {
+          // key já está no formato "BENCH-INDEX"
+          return `${player.id}:${key}`;
+        });
+
+      await onSave({
+        formation,
+        starting_ids: startingPlayerIds,
+        bench_ids: benchPlayerIds,
+        captain_id: captain?.id,
+        free_kick_taker_id: freeKickTaker?.id,
+        penalty_taker_id: penaltyTaker?.id,
+        play_style: playStyle,
+        marking: marking,
+        server_id: serverId,
+        club_id: clubId,
       });
-
-    // Obter os jogadores reservas com suas posições específicas
-    const benchPlayerIds = Object.entries(selectedPlayers)
-      .filter(([key]) => key.startsWith("BENCH-"))
-      .map(([key, player]) => {
-        // key já está no formato "BENCH-INDEX"
-        return `${player.id}:${key}`;
-      });
-
-    onSave({
-      formation,
-      starting_ids: startingPlayerIds,
-      bench_ids: benchPlayerIds,
-      captain_id: captain?.id,
-      free_kick_taker_id: freeKickTaker?.id,
-      penalty_taker_id: penaltyTaker?.id,
-      play_style: playStyle,
-      marking: marking,
-      server_id: serverId,
-      club_id: clubId,
-    });
+    } catch (error) {
+      console.error("Erro ao salvar táticas:", error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  console.log("players", players);
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="grid grid-cols-4 gap-4">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+        <Skeleton className="h-[400px] w-full" />
+        <div className="grid grid-cols-2 gap-4">
+          <Skeleton className="h-10" />
+          <Skeleton className="h-10" />
+        </div>
+        <Skeleton className="h-10 w-full" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -279,8 +340,9 @@ export function TacticsEditor({
           <Label>Estilo de Jogo</Label>
           <Select
             value={playStyle}
-            defaultValue={playStyle}
-            onValueChange={(value: PlayStyle) => setPlayStyle(value)}
+            onValueChange={(value: Tactics["play_style"]) =>
+              setPlayStyle(value)
+            }
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione o estilo de jogo" />
@@ -297,8 +359,7 @@ export function TacticsEditor({
           <Label>Marcação</Label>
           <Select
             value={marking}
-            defaultValue={marking}
-            onValueChange={(value: Marking) => setMarking(value)}
+            onValueChange={(value: Tactics["marking"]) => setMarking(value)}
           >
             <SelectTrigger>
               <SelectValue placeholder="Selecione a marcação" />
@@ -312,7 +373,18 @@ export function TacticsEditor({
         </div>
       </div>
 
-      <Button onClick={handleSave}>Salvar Táticas</Button>
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={isSaving}>
+          {isSaving ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            "Salvar Táticas"
+          )}
+        </Button>
+      </div>
     </div>
   );
 }

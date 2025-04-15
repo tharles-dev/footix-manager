@@ -12,29 +12,19 @@ import {
   DialogTrigger,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { Loader2 } from "lucide-react";
 
 interface SquadListProps {
   clubId: string;
   serverId: string;
 }
 
-interface Tactics {
-  formation: string;
-  starting_ids: string[];
-  bench_ids: string[];
-  captain_id?: string;
-  free_kick_taker_id?: string;
-  penalty_taker_id?: string;
-  play_style: "equilibrado" | "contra-ataque" | "ataque total";
-  marking: "leve" | "pesada" | "muito pesada";
-  startingPlayers?: Player[];
-  benchPlayers?: Player[];
-}
-
 function SquadList({ clubId, serverId }: SquadListProps) {
   const [players, setPlayers] = useState<Player[]>([]);
   const [showTacticsEditor, setShowTacticsEditor] = useState(false);
-  const [tactics, setTactics] = useState<Tactics | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -73,24 +63,6 @@ function SquadList({ clubId, serverId }: SquadListProps) {
     fetchPlayers();
   }, [clubId]);
 
-  useEffect(() => {
-    const fetchTactics = async () => {
-      try {
-        const response = await fetch(`/api/club/${clubId}/tactics`);
-        if (response.ok) {
-          const tacticsData = await response.json();
-          setTactics(tacticsData);
-        }
-      } catch (error) {
-        console.error("Erro ao buscar táticas:", error);
-      }
-    };
-
-    if (players.length > 0) {
-      fetchTactics();
-    }
-  }, [clubId, players]);
-
   const handleSaveTactics = async (tactics: {
     formation: string;
     starting_ids: string[];
@@ -103,6 +75,7 @@ function SquadList({ clubId, serverId }: SquadListProps) {
     server_id: string;
   }) => {
     try {
+      setIsSaving(true);
       const response = await fetch(`/api/club/${clubId}/tactics`, {
         method: "PUT",
         headers: {
@@ -115,34 +88,21 @@ function SquadList({ clubId, serverId }: SquadListProps) {
         throw new Error("Falha ao salvar táticas");
       }
 
-      console.log("Táticas salvas com sucesso");
-
-      // Atualizar as táticas locais após salvar
-      const updatedTactics = await response.json();
-      setTactics(updatedTactics);
+      toast({
+        title: "Sucesso!",
+        description: "Táticas salvas com sucesso.",
+      });
+      setShowTacticsEditor(false);
     } catch (error) {
       console.error("Erro ao salvar táticas:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível salvar as táticas. Tente novamente.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
-  };
-
-  // Preparar os dados para o TacticsEditor
-  const getTacticsEditorProps = () => {
-    if (!tactics) {
-      return {
-        initialFormation: "4-4-2",
-        startingPlayerIds: [],
-        benchPlayerIds: [],
-      };
-    }
-
-    return {
-      initialFormation: tactics.formation || "4-4-2",
-      startingPlayerIds: tactics.starting_ids || [],
-      benchPlayerIds: tactics.bench_ids || [],
-      captainId: tactics.captain_id,
-      freeKickTakerId: tactics.free_kick_taker_id,
-      penaltyTakerId: tactics.penalty_taker_id,
-    };
   };
 
   return (
@@ -150,7 +110,16 @@ function SquadList({ clubId, serverId }: SquadListProps) {
       <div className="flex justify-end">
         <Dialog open={showTacticsEditor} onOpenChange={setShowTacticsEditor}>
           <DialogTrigger asChild>
-            <Button>Configurar Tática</Button>
+            <Button disabled={isSaving}>
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                "Configurar Tática"
+              )}
+            </Button>
           </DialogTrigger>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -165,7 +134,6 @@ function SquadList({ clubId, serverId }: SquadListProps) {
               players={players}
               serverId={serverId}
               onSave={handleSaveTactics}
-              {...getTacticsEditorProps()}
             />
           </DialogContent>
         </Dialog>

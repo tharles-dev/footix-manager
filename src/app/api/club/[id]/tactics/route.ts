@@ -125,18 +125,23 @@ export async function PUT(
     }
 
     // Atualiza a tática com os dados completos
-    const { error } = await supabase.from("club_tactics").upsert({
-      club_id: params.id,
-      formation: data.formation,
-      starting_ids: data.starting_ids, // Agora contém "id:POSITION-INDEX"
-      bench_ids: data.bench_ids, // Agora contém "id:BENCH-INDEX"
-      captain_id: data.captain_id,
-      free_kick_taker_id: data.free_kick_taker_id,
-      penalty_taker_id: data.penalty_taker_id,
-      play_style: data.play_style,
-      marking: data.marking,
-      server_id: data.server_id,
-    });
+    const { error } = await supabase.from("club_tactics").upsert(
+      {
+        club_id: params.id,
+        formation: data.formation,
+        starting_ids: data.starting_ids,
+        bench_ids: data.bench_ids,
+        captain_id: data.captain_id,
+        free_kick_taker_id: data.free_kick_taker_id,
+        penalty_taker_id: data.penalty_taker_id,
+        play_style: data.play_style,
+        marking: data.marking,
+        server_id: data.server_id,
+      },
+      {
+        onConflict: "club_id,server_id",
+      }
+    );
 
     if (error) {
       console.log("error", error);
