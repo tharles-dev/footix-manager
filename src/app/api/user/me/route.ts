@@ -41,6 +41,41 @@ export async function GET() {
       .eq("user_id", user.id)
       .single();
 
+    // Se o clube existir, buscar informações adicionais
+    if (club) {
+      // Buscar configurações do servidor para cálculos de teto salarial
+      const { data: serverConfig } = await supabase
+        .from("servers")
+        .select("salary_cap, transfer_window_open")
+        .eq("id", club.server_id)
+        .single();
+
+      // Buscar jogadores do clube para calcular salários
+      const { data: players } = await supabase
+        .from("server_players")
+        .select("contract")
+        .eq("club_id", club.id)
+        .eq("server_id", club.server_id);
+
+      // Calcular teto salarial
+      const salaryCap =
+        club.season_budget_base * (serverConfig?.salary_cap / 100) || 0;
+
+      // Calcular total de salários atuais
+      const currentTotalSalaries =
+        players?.reduce((total, player) => {
+          return total + (player.contract?.salary || 0);
+        }, 0) || 0;
+
+      // Adicionar informações financeiras ao objeto do clube
+      club.financial_info = {
+        salary_cap: salaryCap,
+        current_total_salaries: currentTotalSalaries,
+        salary_cap_remaining: salaryCap - currentTotalSalaries,
+        transfer_window_open: serverConfig?.transfer_window_open || false,
+      };
+    }
+
     return apiResponse({
       user: userData,
       club: club || null,

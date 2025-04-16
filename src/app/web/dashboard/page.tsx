@@ -122,9 +122,6 @@ export default function DashboardPage() {
     return <div className="text-red-500 p-4">Erro: {error}</div>;
   }
 
-  // Calcular o saldo disponível
-  const availableBalance = club.balance - club.season_expenses;
-
   return (
     <div className="space-y-4">
       {showPack && packPlayers.length === 0 && (
@@ -186,9 +183,9 @@ export default function DashboardPage() {
             logo={club.logo_url || "/images/default-club.png"}
             division={club.division || "SEM DIVISÃO"}
             ranking={0}
-            balance={club.balance}
-            sponsorship={club.season_budget_base}
-            bids={availableBalance}
+            balance={club.season_budget_base}
+            sponsorship={club.financial_info.current_total_salaries}
+            bids={club.balance}
           />
 
           <Tabs defaultValue="matches" className="w-full">

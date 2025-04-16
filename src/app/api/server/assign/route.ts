@@ -71,16 +71,6 @@ export async function POST() {
       );
     }
 
-    // 5. Atualiza contador de membros do servidor
-    const { error: updateError } = await supabase
-      .from("servers")
-      .update({ current_members: availableServer.current_members + 1 })
-      .eq("id", availableServer.id);
-
-    if (updateError) {
-      console.error("Erro ao atualizar contador de membros:", updateError);
-    }
-
     // 6. Retorna status da vinculação com dados do servidor
     return apiResponse({
       has_server: true,

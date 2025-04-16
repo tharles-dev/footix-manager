@@ -115,7 +115,15 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 2.3 Verificar teto salarial do clube
+    // 2.3 Verificar se o clube tem saldo suficiente para pagar o valor de mercado
+    if (club.balance < marketValue) {
+      throw new ApiError({
+        message: `Saldo insuficiente para contratar o jogador. Saldo atual: ${club.balance}, Valor necessário: ${marketValue}`,
+        code: "INSUFFICIENT_BALANCE",
+      });
+    }
+
+    // 2.4 Verificar teto salarial do clube
     const { data: clubSalaries, error: salariesError } = await supabase
       .from("server_players")
       .select("contract")

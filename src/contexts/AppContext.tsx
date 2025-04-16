@@ -36,6 +36,12 @@ export interface Club {
   season_budget_base: number;
   season_expenses: number;
   server_id: string;
+  financial_info: {
+    salary_cap: number;
+    current_total_salaries: number;
+    salary_cap_remaining: number;
+    transfer_window_open: boolean;
+  };
 }
 
 interface AppContextType {
