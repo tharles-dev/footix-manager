@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const { data: serverConfig, error: serverError } = await supabase
       .from("servers")
       .select(
-        "season, market_value_multiplier, min_player_salary_percentage, max_player_salary_percentage, salary_cap, transfer_window_open, auto_clause_percentage"
+        "season, market_value_multiplier, min_player_salary_percentage, max_player_salary_percentage, salary_cap, transfer_window_open, auto_clause_percentage, allow_free_agent_signing_outside_window"
       )
       .eq("id", serverId)
       .single();
@@ -53,7 +53,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verificar se a janela de transferências está aberta
-    if (!serverConfig.transfer_window_open) {
+    if (
+      !serverConfig.transfer_window_open &&
+      !serverConfig.allow_free_agent_signing_outside_window
+    ) {
       throw new ApiError({
         message: "Janela de transferências está fechada",
         code: "TRANSFER_WINDOW_CLOSED",

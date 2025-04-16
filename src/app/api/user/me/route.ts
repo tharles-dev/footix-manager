@@ -46,7 +46,9 @@ export async function GET() {
       // Buscar configurações do servidor para cálculos de teto salarial
       const { data: serverConfig } = await supabase
         .from("servers")
-        .select("salary_cap, transfer_window_open")
+        .select(
+          "salary_cap, transfer_window_open, allow_free_agent_signing_outside_window"
+        )
         .eq("id", club.server_id)
         .single();
 
@@ -73,6 +75,8 @@ export async function GET() {
         current_total_salaries: currentTotalSalaries,
         salary_cap_remaining: salaryCap - currentTotalSalaries,
         transfer_window_open: serverConfig?.transfer_window_open || false,
+        allow_free_agent_signing_outside_window:
+          serverConfig?.allow_free_agent_signing_outside_window || false,
       };
     }
 
