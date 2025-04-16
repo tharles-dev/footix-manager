@@ -1,92 +1,208 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { MoreVertical } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useState } from "react";
+import { PlayerDetails } from "@/components/transfers/PlayerDetails";
+import { Eye, TrendingUp, TrendingDown } from "lucide-react";
+import { getCountryCode } from "@/lib/utils/country";
 
 interface PlayerCardProps {
   player: {
+    id: string;
     name: string;
-    overall: number;
-    position: string;
+    age: number;
     nationality: string;
-    club?: {
+    position: string;
+    overall: number;
+    potential: number;
+    pace: number;
+    shooting: number;
+    passing: number;
+    dribbling: number;
+    defending: number;
+    physical: number;
+    salario_atual: number;
+    valor_mercado: number;
+    valor_clausula: number;
+    salario_minimo: number;
+    salario_maximo: number;
+    morale: number;
+    form: number;
+    level: number;
+    is_star_player: boolean;
+    is_on_loan: boolean;
+    loan_from_club: {
+      id: string;
       name: string;
-      user?: {
+    } | null;
+    club: {
+      id: string;
+      name: string;
+      user: {
+        id: string;
         name: string;
       };
     } | null;
-    salario_atual: number;
-    valor_mercado: number;
-    valor_clausula?: number;
+    acoes_disponiveis: {
+      pode_contratar: boolean;
+      pode_pagar_clausula: boolean;
+      pode_emprestar: boolean;
+    };
   };
-  onActionClick: () => void;
+  onSuccess?: () => void;
 }
 
-export function PlayerCard({ player, onActionClick }: PlayerCardProps) {
+export function PlayerCard({ player, onSuccess }: PlayerCardProps) {
+  const [showDetails, setShowDetails] = useState(false);
+
+  const handleSuccess = () => {
+    setShowDetails(false);
+    onSuccess?.();
+  };
+
+  // Função para determinar a cor do badge de forma
+  const getFormColor = (form: number) => {
+    if (form >= 80) return "bg-green-500";
+    if (form >= 60) return "bg-green-400";
+    if (form >= 40) return "bg-yellow-400";
+    if (form >= 20) return "bg-orange-400";
+    return "bg-red-500";
+  };
+
+  // Função para determinar a cor do badge de moral
+  const getMoraleColor = (morale: number) => {
+    if (morale >= 80) return "bg-green-500";
+    if (morale >= 60) return "bg-green-400";
+    if (morale >= 40) return "bg-yellow-400";
+    if (morale >= 20) return "bg-orange-400";
+    return "bg-red-500";
+  };
+
+  const countryCode = getCountryCode(player.nationality);
+
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <div className="flex gap-2">
-          <Badge
-            variant="default"
-            className="font-bold text-base bg-primary hover:bg-primary"
+    <>
+      <Card className="overflow-hidden">
+        <CardHeader className="p-4 pb-0">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage
+                src={`/assets/flags/${countryCode.toLowerCase()}.svg`}
+                alt={player.nationality}
+              />
+              <AvatarFallback>{countryCode}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <h3 className="font-semibold truncate">{player.name}</h3>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{player.position}</span>
+                <span>•</span>
+                <span>{player.age} anos</span>
+                {player.is_on_loan && (
+                  <>
+                    <span>•</span>
+                    <Badge
+                      variant="outline"
+                      className="bg-blue-100 text-blue-800 border-blue-300"
+                    >
+                      Emprestado
+                    </Badge>
+                  </>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col items-end">
+              <Badge variant="secondary" className="text-lg">
+                {player.overall}
+              </Badge>
+              {player.potential > player.overall && (
+                <div className="flex items-center text-xs text-green-600 mt-1">
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  <span>+{player.potential - player.overall}</span>
+                </div>
+              )}
+              {player.potential < player.overall && (
+                <div className="flex items-center text-xs text-red-600 mt-1">
+                  <TrendingDown className="h-3 w-3 mr-1" />
+                  <span>{player.potential - player.overall}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-4">
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div>
+              <p className="text-muted-foreground">Valor de mercado:</p>
+              <p className="font-medium">
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(player.valor_mercado)}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Cláusula:</p>
+              <p className="font-medium">
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(player.valor_clausula)}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Salário:</p>
+              <p className="font-medium">
+                {new Intl.NumberFormat("pt-BR", {
+                  style: "currency",
+                  currency: "BRL",
+                }).format(player.salario_atual)}
+              </p>
+            </div>
+            <div>
+              <p className="text-muted-foreground">Clube:</p>
+              <p className="font-medium truncate">
+                {player.club ? player.club.name : "Livre"}
+              </p>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <Badge className={`${getFormColor(player.form)} text-white`}>
+              Forma: {player.form}
+            </Badge>
+            <Badge className={`${getMoraleColor(player.morale)} text-white`}>
+              Moral: {player.morale}
+            </Badge>
+            <Badge variant="outline">Nível: {player.level}</Badge>
+          </div>
+        </CardContent>
+        <CardFooter className="p-4 pt-0 flex justify-between">
+          <Button
+            variant="outline"
+            size="sm"
+            className="w-full"
+            onClick={() => setShowDetails(true)}
           >
-            {player.overall}
-          </Badge>
-          <Badge variant="secondary">{player.position}</Badge>
-          <Badge variant="outline" className="text-muted-foreground">
-            {player.nationality}
-          </Badge>
-        </div>
-        <Button variant="ghost" size="icon" onClick={onActionClick}>
-          <MoreVertical className="h-4 w-4" />
-        </Button>
-      </CardHeader>
+            <Eye className="h-4 w-4 mr-2" />
+            Ver Detalhes
+          </Button>
+        </CardFooter>
+      </Card>
 
-      <CardContent>
-        <Avatar>
-          <AvatarImage src="/assets/player_dummy.png" />
-          <AvatarFallback>
-            {player.name
-              .split(" ")
-              .map((name) => name[0])
-              .join("")}
-          </AvatarFallback>
-        </Avatar>
-        <h3 className="font-semibold text-lg mb-1">{player.name}</h3>
-
-        {player.club && player.club.name ? (
-          <p className="text-sm text-muted-foreground mb-4">
-            {player.club.name} ({player.club.user?.name || "Sem dono"})
-          </p>
-        ) : (
-          <p className="text-sm text-emerald-600 dark:text-emerald-500 font-medium mb-4">
-            Jogador Livre
-          </p>
-        )}
-
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-xs text-muted-foreground">Salário</p>
-            <p className="font-medium">
-              {new Intl.NumberFormat("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              }).format(player.salario_atual)}
-            </p>
-          </div>
-          <div>
-            <p className="text-xs text-muted-foreground">Valor de Mercado</p>
-            <p className="font-medium">
-              {new Intl.NumberFormat("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              }).format(player.valor_mercado)}
-            </p>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      <PlayerDetails
+        player={player}
+        isOpen={showDetails}
+        onClose={() => setShowDetails(false)}
+        onSuccess={handleSuccess}
+      />
+    </>
   );
 }

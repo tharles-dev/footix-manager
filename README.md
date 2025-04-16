@@ -175,6 +175,42 @@
   - [x] Histórico de movimentações
 - [x] Sistema de premiações
 
+#### 2.4 Sistema de Transferências
+
+- [ ] Implementar fluxo completo de negociação de jogadores:
+  - [ ] **Verificação Inicial:**
+    - [ ] Consulta à tabela `servers` para obter configurações de mercado
+    - [ ] Consulta à tabela `server_players` para verificar disponibilidade do jogador
+    - [ ] Consulta à tabela `clubs` para verificar saldo e teto salarial
+  - [ ] **Cálculo de Valores:**
+    - [ ] Cálculo do valor de mercado baseado no salário e `market_value_multiplier`
+    - [ ] Verificação se o salário está dentro dos limites permitidos
+    - [ ] Cálculo do custo total do contrato (salário × duração)
+  - [ ] **Processamento da Transação:**
+    - [ ] Criação de registro na tabela `transfers`
+    - [ ] Atualização do saldo na tabela `clubs`
+    - [ ] Registro da transação na tabela `financial_transactions`
+    - [ ] Atualização do contrato do jogador na tabela `server_players`
+  - [ ] **Atualização Financeira:**
+    - [ ] Registro da despesa na tabela `club_expenses`
+    - [ ] Atualização do saldo total do clube
+- [ ] Implementar endpoints de transferência:
+  - [ ] `/api/transfer/hire` para contratação de jogadores livres
+  - [ ] `/api/transfer/sell` para venda de jogadores
+  - [ ] `/api/transfer/request` para envio de propostas
+  - [ ] `/api/transfer/accept` para aceitação de propostas
+  - [ ] `/api/transfer/pay-clause` para pagamento de cláusula de rescisão
+  - [ ] `/api/transfer/auction` para leilões de jogadores
+- [ ] Implementar validações de negociação:
+  - [ ] Verificação de janela de transferências
+  - [ ] Verificação de teto salarial
+  - [ ] Verificação de saldo suficiente
+  - [ ] Verificação de disponibilidade do jogador
+- [ ] Implementar notificações de transferência:
+  - [ ] Notificação para o clube vendedor
+  - [ ] Notificação para o clube comprador
+  - [ ] Notificação para o jogador
+
 ### 💻 FASE 3: Desenvolvimento do Admin
 
 #### 3.1 Interface Base
