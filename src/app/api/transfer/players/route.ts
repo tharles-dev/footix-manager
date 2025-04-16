@@ -48,8 +48,36 @@ export async function GET(req: NextRequest) {
     // Obter parâmetros da URL
     const searchParams = Object.fromEntries(req.nextUrl.searchParams);
 
+    // Converter parâmetros para o formato esperado pelo schema
+    const convertedParams = {
+      page: searchParams.page ? Number(searchParams.page) : 1,
+      limit: searchParams.limit ? Number(searchParams.limit) : 20,
+      position: searchParams.position,
+      nationality: searchParams.nationality,
+      status: searchParams.only_free === "true" ? "free" : undefined,
+      transferAvailability: searchParams.transfer_availability,
+      minOverall: searchParams.min_overall
+        ? Number(searchParams.min_overall)
+        : undefined,
+      maxOverall: searchParams.max_overall
+        ? Number(searchParams.max_overall)
+        : undefined,
+      minValue: searchParams.min_value
+        ? Number(searchParams.min_value)
+        : undefined,
+      maxValue: searchParams.max_value
+        ? Number(searchParams.max_value)
+        : undefined,
+      minAge: searchParams.min_age ? Number(searchParams.min_age) : undefined,
+      maxAge: searchParams.max_age ? Number(searchParams.max_age) : undefined,
+      search: searchParams.search,
+      hasContract: searchParams.has_contract
+        ? searchParams.has_contract === "true"
+        : undefined,
+    };
+
     // Validar parâmetros
-    const validatedParams = listPlayersSchema.parse(searchParams);
+    const validatedParams = listPlayersSchema.parse(convertedParams);
 
     // Buscar jogadores
     const result = await listPlayers(

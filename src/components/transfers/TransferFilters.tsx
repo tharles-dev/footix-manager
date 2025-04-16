@@ -1,12 +1,13 @@
-import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -14,321 +15,312 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { z } from "zod";
-import { useToast } from "@/components/ui/use-toast";
+import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+
+type Position =
+  | "all"
+  | "GK"
+  | "CB"
+  | "LB"
+  | "RB"
+  | "DMF"
+  | "CMF"
+  | "LMF"
+  | "RMF"
+  | "AMF"
+  | "SS"
+  | "CF"
+  | "LWF"
+  | "RWF";
 
 interface TransferFiltersProps {
   isOpen: boolean;
   onClose: () => void;
-  onApplyFilters: (filters: FilterValues) => void;
+  onApplyFilters: (filters: {
+    minOverall?: number;
+    maxOverall?: number;
+    minAge?: number;
+    maxAge?: number;
+    minValue?: number;
+    maxValue?: number;
+    search?: string;
+    position?: Position;
+    transferAvailability?: string;
+    hasContract?: boolean;
+  }) => void;
 }
-
-const positions = [
-  { value: "all", label: "Todas" },
-  // Goleiros
-  { value: "GK", label: "Goleiro (GK)" },
-  // Defensores
-  { value: "CB", label: "Zagueiro (CB)" },
-  { value: "LB", label: "Lateral Esquerdo (LB)" },
-  { value: "RB", label: "Lateral Direito (RB)" },
-  // Meio-campistas
-  { value: "DMF", label: "Volante (DMF)" },
-  { value: "CMF", label: "Meia Central (CMF)" },
-  { value: "LMF", label: "Meia Esquerda (LMF)" },
-  { value: "RMF", label: "Meia Direita (RMF)" },
-  { value: "AMF", label: "Meia Atacante (AMF)" },
-  // Atacantes
-  { value: "SS", label: "Segundo Atacante (SS)" },
-  { value: "CF", label: "Centroavante (CF)" },
-  { value: "LWF", label: "Ponta Esquerda (LWF)" },
-  { value: "RWF", label: "Ponta Direita (RWF)" },
-];
-
-const filterSchema = z
-  .object({
-    position: z
-      .enum([
-        "all",
-        "GK",
-        "CB",
-        "LB",
-        "RB",
-        "DMF",
-        "CMF",
-        "LMF",
-        "RMF",
-        "AMF",
-        "SS",
-        "CF",
-        "LWF",
-        "RWF",
-      ])
-      .optional(),
-    minOverall: z.number().min(1).max(99).optional(),
-    maxOverall: z.number().min(1).max(99).optional(),
-    minValue: z.number().min(0).optional(),
-    maxValue: z.number().min(0).optional(),
-    onlyFree: z.boolean().optional(),
-  })
-  .refine(
-    (data) => {
-      // Se ambos estiverem definidos, minOverall deve ser menor ou igual a maxOverall
-      if (data.minOverall && data.maxOverall) {
-        return data.minOverall <= data.maxOverall;
-      }
-      return true;
-    },
-    {
-      message: "O overall mínimo deve ser menor ou igual ao máximo",
-      path: ["minOverall"],
-    }
-  )
-  .refine(
-    (data) => {
-      // Se ambos estiverem definidos, minValue deve ser menor ou igual a maxValue
-      if (data.minValue && data.maxValue) {
-        return data.minValue <= data.maxValue;
-      }
-      return true;
-    },
-    {
-      message: "O valor mínimo deve ser menor ou igual ao máximo",
-      path: ["minValue"],
-    }
-  );
-
-type FilterValues = z.infer<typeof filterSchema>;
-type Position = NonNullable<FilterValues["position"]>;
 
 export function TransferFilters({
   isOpen,
   onClose,
   onApplyFilters,
 }: TransferFiltersProps) {
-  const [filters, setFilters] = useState<FilterValues>({});
-  const { toast } = useToast();
+  const searchParams = useSearchParams();
 
-  const handlePositionChange = (value: Position) => {
-    setFilters((prev) => ({
-      ...prev,
-      position: value === "all" ? undefined : value,
-    }));
-  };
+  // Inicializar estados com valores da URL
+  const [minOverall, setMinOverall] = useState<number | undefined>(
+    searchParams.get("min_overall")
+      ? Number(searchParams.get("min_overall"))
+      : undefined
+  );
+  const [maxOverall, setMaxOverall] = useState<number | undefined>(
+    searchParams.get("max_overall")
+      ? Number(searchParams.get("max_overall"))
+      : undefined
+  );
+  const [minAge, setMinAge] = useState<number | undefined>(
+    searchParams.get("min_age")
+      ? Number(searchParams.get("min_age"))
+      : undefined
+  );
+  const [maxAge, setMaxAge] = useState<number | undefined>(
+    searchParams.get("max_age")
+      ? Number(searchParams.get("max_age"))
+      : undefined
+  );
+  const [minValue, setMinValue] = useState<number | undefined>(
+    searchParams.get("min_value")
+      ? Number(searchParams.get("min_value"))
+      : undefined
+  );
+  const [maxValue, setMaxValue] = useState<number | undefined>(
+    searchParams.get("max_value")
+      ? Number(searchParams.get("max_value"))
+      : undefined
+  );
+  const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [position, setPosition] = useState<Position | undefined>(
+    (searchParams.get("position") as Position) || undefined
+  );
+  const [transferAvailability, setTransferAvailability] = useState(
+    searchParams.get("transfer_availability") || ""
+  );
+  const [hasContract, setHasContract] = useState<string>(
+    searchParams.get("has_contract") || ""
+  );
 
   const handleApplyFilters = () => {
-    try {
-      // Limpa valores vazios antes da validação
-      const filtersToValidate = Object.fromEntries(
-        Object.entries(filters).filter(([, value]) => value != null)
-      );
-
-      // Converte strings numéricas para números
-      if (filtersToValidate.minOverall) {
-        filtersToValidate.minOverall = Number(filtersToValidate.minOverall);
-      }
-      if (filtersToValidate.maxOverall) {
-        filtersToValidate.maxOverall = Number(filtersToValidate.maxOverall);
-      }
-      if (filtersToValidate.minValue) {
-        filtersToValidate.minValue = Number(filtersToValidate.minValue);
-      }
-      if (filtersToValidate.maxValue) {
-        filtersToValidate.maxValue = Number(filtersToValidate.maxValue);
-      }
-
-      const validatedFilters = filterSchema.parse(filtersToValidate);
-      onApplyFilters(validatedFilters);
-      onClose();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const firstError = error.errors[0];
-        toast({
-          variant: "destructive",
-          title: "Erro nos filtros",
-          description: firstError.message,
-        });
-      }
-    }
+    onApplyFilters({
+      minOverall,
+      maxOverall,
+      minAge,
+      maxAge,
+      minValue,
+      maxValue,
+      search,
+      position: position === "all" ? undefined : position,
+      transferAvailability:
+        transferAvailability === "all" ? undefined : transferAvailability,
+      hasContract: hasContract === "all" ? undefined : hasContract === "true",
+    });
+    onClose();
   };
 
-  const handleClearFilters = () => {
-    setFilters({});
-    onApplyFilters({});
-    onClose();
+  const handleReset = () => {
+    setMinOverall(undefined);
+    setMaxOverall(undefined);
+    setMinAge(undefined);
+    setMaxAge(undefined);
+    setMinValue(undefined);
+    setMaxValue(undefined);
+    setSearch("");
+    setPosition(undefined);
+    setTransferAvailability("");
+    setHasContract("all");
   };
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent
-        side="right"
-        className="w-full sm:max-w-md"
-        aria-describedby="transfer-filters-desc"
-      >
+      <SheetContent className="w-[400px] sm:w-[540px]">
         <SheetHeader>
           <SheetTitle>Filtros</SheetTitle>
+          <SheetDescription>
+            Ajuste os filtros para encontrar os jogadores desejados
+          </SheetDescription>
         </SheetHeader>
-        <p id="transfer-filters-desc" className="sr-only">
-          Filtros para refinar a busca de jogadores no mercado de
-          transferências.
-        </p>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="search">Nome do Jogador</Label>
+            <Input
+              id="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Digite o nome do jogador..."
+            />
+          </div>
 
-        <ScrollArea className="h-[calc(100vh-10rem)] px-1">
-          <div className="space-y-6 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="position">Posição</Label>
-              <Select
-                value={filters.position || "all"}
-                onValueChange={handlePositionChange as (value: string) => void}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a posição" />
-                </SelectTrigger>
-                <SelectContent>
-                  {positions.map((position) => (
-                    <SelectItem key={position.value} value={position.value}>
-                      {position.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+          <div className="grid gap-2">
+            <Label htmlFor="position">Posição</Label>
+            <Select
+              value={position}
+              onValueChange={(value) => setPosition(value as Position)}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione uma posição" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="GK">Goleiro</SelectItem>
+                <SelectItem value="CB">Zagueiro</SelectItem>
+                <SelectItem value="LB">Lateral Esquerdo</SelectItem>
+                <SelectItem value="RB">Lateral Direito</SelectItem>
+                <SelectItem value="DMF">Volante</SelectItem>
+                <SelectItem value="CMF">Meio Campo</SelectItem>
+                <SelectItem value="LMF">Meia Esquerda</SelectItem>
+                <SelectItem value="RMF">Meia Direita</SelectItem>
+                <SelectItem value="AMF">Meia Atacante</SelectItem>
+                <SelectItem value="SS">Segundo Atacante</SelectItem>
+                <SelectItem value="CF">Centroavante</SelectItem>
+                <SelectItem value="LWF">Ponta Esquerda</SelectItem>
+                <SelectItem value="RWF">Ponta Direita</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="space-y-2">
-              <Label>Overall</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="minOverall"
-                    className="text-xs text-muted-foreground"
-                  >
-                    Mínimo
-                  </Label>
-                  <Input
-                    id="minOverall"
-                    type="number"
-                    placeholder="Mín"
-                    min={1}
-                    max={99}
-                    value={filters.minOverall || ""}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        minOverall: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="maxOverall"
-                    className="text-xs text-muted-foreground"
-                  >
-                    Máximo
-                  </Label>
-                  <Input
-                    id="maxOverall"
-                    type="number"
-                    placeholder="Máx"
-                    min={1}
-                    max={99}
-                    value={filters.maxOverall || ""}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        maxOverall: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      }))
-                    }
-                  />
-                </div>
+          <div className="grid gap-2">
+            <Label>Overall</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minOverall">Overall Mínimo</Label>
+                <Input
+                  id="minOverall"
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={minOverall || ""}
+                  onChange={(e) =>
+                    setMinOverall(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                />
               </div>
-            </div>
-
-            <div className="space-y-2">
-              <Label>Valor de Mercado</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="minValue"
-                    className="text-xs text-muted-foreground"
-                  >
-                    Mínimo
-                  </Label>
-                  <Input
-                    id="minValue"
-                    type="number"
-                    placeholder="Mín"
-                    min={0}
-                    value={filters.minValue || ""}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        minValue: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      }))
-                    }
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="maxValue"
-                    className="text-xs text-muted-foreground"
-                  >
-                    Máximo
-                  </Label>
-                  <Input
-                    id="maxValue"
-                    type="number"
-                    placeholder="Máx"
-                    min={0}
-                    value={filters.maxValue || ""}
-                    onChange={(e) =>
-                      setFilters((prev) => ({
-                        ...prev,
-                        maxValue: e.target.value
-                          ? Number(e.target.value)
-                          : undefined,
-                      }))
-                    }
-                  />
-                </div>
+              <div>
+                <Label htmlFor="maxOverall">Overall Máximo</Label>
+                <Input
+                  id="maxOverall"
+                  type="number"
+                  min={0}
+                  max={99}
+                  value={maxOverall || ""}
+                  onChange={(e) =>
+                    setMaxOverall(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                />
               </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="onlyFree"
-                checked={filters.onlyFree || false}
-                onCheckedChange={(checked) =>
-                  setFilters((prev) => ({
-                    ...prev,
-                    onlyFree: checked === true,
-                  }))
-                }
-              />
-              <Label htmlFor="onlyFree">Apenas jogadores livres</Label>
             </div>
           </div>
-        </ScrollArea>
 
-        <div className="flex gap-4 mt-6">
-          <Button
-            variant="outline"
-            className="flex-1"
-            onClick={handleClearFilters}
-          >
+          <div className="grid gap-2">
+            <Label>Idade</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minAge">Idade Mínima</Label>
+                <Input
+                  id="minAge"
+                  type="number"
+                  min={15}
+                  max={50}
+                  value={minAge || ""}
+                  onChange={(e) =>
+                    setMinAge(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxAge">Idade Máxima</Label>
+                <Input
+                  id="maxAge"
+                  type="number"
+                  min={15}
+                  max={50}
+                  value={maxAge || ""}
+                  onChange={(e) =>
+                    setMaxAge(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Valor</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="minValue">Valor Mínimo</Label>
+                <Input
+                  id="minValue"
+                  type="number"
+                  min={0}
+                  value={minValue || ""}
+                  onChange={(e) =>
+                    setMinValue(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                />
+              </div>
+              <div>
+                <Label htmlFor="maxValue">Valor Máximo</Label>
+                <Input
+                  id="maxValue"
+                  type="number"
+                  min={0}
+                  value={maxValue || ""}
+                  onChange={(e) =>
+                    setMaxValue(
+                      e.target.value ? Number(e.target.value) : undefined
+                    )
+                  }
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="transferAvailability">Disponibilidade</Label>
+            <Select
+              value={transferAvailability}
+              onValueChange={setTransferAvailability}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a disponibilidade" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas</SelectItem>
+                <SelectItem value="available">Disponível</SelectItem>
+                <SelectItem value="auction_only">Apenas Leilão</SelectItem>
+                <SelectItem value="unavailable">Indisponível</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label htmlFor="hasContract">Status do Contrato</Label>
+            <Select value={hasContract} onValueChange={setHasContract}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o status do contrato" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos</SelectItem>
+                <SelectItem value="true">Com Contrato</SelectItem>
+                <SelectItem value="false">Sem Contrato</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <Button variant="outline" onClick={handleReset}>
             Limpar
           </Button>
-          <Button className="flex-1" onClick={handleApplyFilters}>
-            Aplicar
-          </Button>
+          <Button onClick={handleApplyFilters}>Aplicar</Button>
         </div>
       </SheetContent>
     </Sheet>

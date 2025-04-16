@@ -1,3 +1,9 @@
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { MoreVertical } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
+
 interface PlayerCardProps {
   player: {
     name: string;
@@ -9,7 +15,7 @@ interface PlayerCardProps {
       user?: {
         name: string;
       };
-    };
+    } | null;
     salario_atual: number;
     valor_mercado: number;
     valor_clausula?: number;
@@ -19,57 +25,50 @@ interface PlayerCardProps {
 
 export function PlayerCard({ player, onActionClick }: PlayerCardProps) {
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4">
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-sm font-semibold px-2 py-1 bg-gray-100 rounded">
-              {player.overall}
-            </span>
-            <span className="text-sm font-semibold px-2 py-1 bg-gray-100 rounded">
-              {player.position}
-            </span>
-            <span className="text-sm text-gray-600">{player.nationality}</span>
-          </div>
-
-          <h3 className="font-semibold text-lg mb-1">{player.name}</h3>
-
-          {player.club ? (
-            <p className="text-sm text-gray-600 mb-2">
-              {player.club.name} ({player.club.user?.name || "Sem dono"})
-            </p>
-          ) : (
-            <p className="text-sm text-green-600 font-medium mb-2">
-              Jogador Livre
-            </p>
-          )}
-        </div>
-
-        <button
-          onClick={onActionClick}
-          className="text-primary-600 p-2 hover:bg-gray-50 rounded-full"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-            className="w-6 h-6"
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <div className="flex gap-2">
+          <Badge
+            variant="default"
+            className="font-bold text-base bg-primary hover:bg-primary"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="M12 6.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 12.75a.75.75 0 110-1.5.75.75 0 010 1.5zM12 18.75a.75.75 0 110-1.5.75.75 0 010 1.5z"
-            />
-          </svg>
-        </button>
-      </div>
+            {player.overall}
+          </Badge>
+          <Badge variant="secondary">{player.position}</Badge>
+          <Badge variant="outline" className="text-muted-foreground">
+            {player.nationality}
+          </Badge>
+        </div>
+        <Button variant="ghost" size="icon" onClick={onActionClick}>
+          <MoreVertical className="h-4 w-4" />
+        </Button>
+      </CardHeader>
 
-      <div className="mt-3 pt-3 border-t border-gray-100">
+      <CardContent>
+        <Avatar>
+          <AvatarImage src="/assets/player_dummy.png" />
+          <AvatarFallback>
+            {player.name
+              .split(" ")
+              .map((name) => name[0])
+              .join("")}
+          </AvatarFallback>
+        </Avatar>
+        <h3 className="font-semibold text-lg mb-1">{player.name}</h3>
+
+        {player.club && player.club.name ? (
+          <p className="text-sm text-muted-foreground mb-4">
+            {player.club.name} ({player.club.user?.name || "Sem dono"})
+          </p>
+        ) : (
+          <p className="text-sm text-emerald-600 dark:text-emerald-500 font-medium mb-4">
+            Jogador Livre
+          </p>
+        )}
+
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <p className="text-xs text-gray-500">Salário</p>
+            <p className="text-xs text-muted-foreground">Salário</p>
             <p className="font-medium">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
@@ -78,7 +77,7 @@ export function PlayerCard({ player, onActionClick }: PlayerCardProps) {
             </p>
           </div>
           <div>
-            <p className="text-xs text-gray-500">Valor de Mercado</p>
+            <p className="text-xs text-muted-foreground">Valor de Mercado</p>
             <p className="font-medium">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
@@ -87,7 +86,7 @@ export function PlayerCard({ player, onActionClick }: PlayerCardProps) {
             </p>
           </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
