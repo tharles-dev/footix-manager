@@ -25,8 +25,8 @@ const createServerSchema = z.object({
   allow_penalty_waiver: z.boolean(),
   registration_start: z.string().datetime(),
   registration_deadline: z.string().datetime(),
-  transfer_window_start: z.string().datetime().optional(),
-  transfer_window_end: z.string().datetime().optional(),
+  transfer_window_open: z.boolean(),
+  allow_free_agent_signing_outside_window: z.boolean(),
 });
 
 export async function POST(request: NextRequest) {
@@ -91,9 +91,9 @@ export async function POST(request: NextRequest) {
         entry_mode: body.entry_mode,
         registration_start: body.registration_start,
         registration_deadline: body.registration_deadline,
-        transfer_window_start: body.transfer_window_start,
-        transfer_window_end: body.transfer_window_end,
-        transfer_window_open: false,
+        transfer_window_open: body.transfer_window_open,
+        allow_free_agent_signing_outside_window:
+          body.allow_free_agent_signing_outside_window,
         initial_budget: body.initial_budget,
         budget_growth_per_season: body.budget_growth_per_season,
         salary_cap: body.salary_cap,

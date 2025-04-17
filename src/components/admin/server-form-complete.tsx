@@ -20,13 +20,6 @@ import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Card,
   CardContent,
   CardDescription,
@@ -43,95 +36,113 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { Label } from "@/components/ui/label";
+import { Label as UILabel } from "@/components/ui/label";
 
-// Schema completo para criação de servidor
-const serverFormSchema = z.object({
-  // Informações básicas
-  name: z.string().min(3, "Nome deve ter no mínimo 3 caracteres"),
-  max_members: z.number().min(2).max(64),
-  season_length_days: z.number().min(30).max(90),
-  entry_mode: z.enum(["public", "private"]),
+const formSchema = z
+  .object({
+    name: z.string().min(3, "Nome deve ter pelo menos 3 caracteres"),
+    max_members: z
+      .number()
+      .min(2, "Mínimo de 2 membros")
+      .max(100, "Máximo de 100 membros"),
+    season_length_days: z
+      .number()
+      .min(30, "Mínimo de 30 dias")
+      .max(90, "Máximo de 90 dias"),
+    entry_mode: z.enum(["public", "private"]),
+    registration_start: z.date(),
+    registration_deadline: z.date(),
+    initial_budget: z.number().min(0, "Orçamento inicial deve ser positivo"),
+    budget_growth_per_season: z
+      .number()
+      .min(0, "Crescimento deve ser positivo")
+      .max(1, "Máximo de 100%"),
+    salary_cap: z
+      .number()
+      .min(0, "Teto salarial deve ser positivo")
+      .max(100, "Máximo de 100%"),
+    salary_cap_penalty_percentage: z
+      .number()
+      .min(0, "Multa deve ser positiva")
+      .max(1, "Máximo de 100%"),
+    min_player_salary_percentage: z
+      .number()
+      .min(0, "Percentual mínimo deve ser positivo")
+      .max(100, "Máximo de 100%"),
+    max_player_salary_percentage: z
+      .number()
+      .min(0, "Percentual máximo deve ser positivo")
+      .max(1000, "Máximo de 1000%"),
+    enable_monetization: z.boolean(),
+    activate_clause: z.boolean(),
+    auto_clause_percentage: z
+      .number()
+      .min(100, "Mínimo de 100%")
+      .max(1000, "Máximo de 1000%"),
+    market_value_multiplier: z
+      .number()
+      .min(1, "Mínimo de 1x")
+      .max(100, "Máximo de 100x"),
+    transfer_window_open: z.boolean(),
+    allow_free_agent_signing_outside_window: z.boolean(),
+    match_frequency_minutes: z.number().min(60, "Mínimo de 60 minutos"),
+    enable_auto_simulation: z.boolean(),
+    red_card_penalty: z.number().min(0, "Multa deve ser positiva"),
+    allow_penalty_waiver: z.boolean(),
+  })
+  .refine(
+    (data) => {
+      return data.registration_deadline > data.registration_start;
+    },
+    {
+      message: "Prazo final deve ser posterior à data de início",
+      path: ["registration_deadline"],
+    }
+  );
 
-  // Orçamento e economia
-  initial_budget: z.number().min(1000000),
-  budget_growth_per_season: z.number().min(0).max(1),
-  salary_cap: z.number().min(0).max(100),
-  salary_cap_penalty_percentage: z.number().min(0).max(1),
-  enable_monetization: z.boolean(),
+type FormValues = z.infer<typeof formSchema>;
 
-  // Regras de mercado e salários
-  min_player_salary_percentage: z.number().min(1).max(100),
-  max_player_salary_percentage: z.number().min(100).max(500),
-  activate_clause: z.boolean(),
-  auto_clause_percentage: z.number().min(100).max(1000),
-  market_value_multiplier: z.number().min(1).max(100),
-
-  // Simulação
-  match_frequency_minutes: z.number().min(60),
-  enable_auto_simulation: z.boolean(),
-
-  // Penalidades
-  red_card_penalty: z.number().min(0),
-  allow_penalty_waiver: z.boolean(),
-
-  // Datas
-  registration_start: z.date(),
-  registration_deadline: z.date(),
-  transfer_window_start: z.date().optional(),
-  transfer_window_end: z.date().optional(),
-});
-
-type ServerFormValues = z.infer<typeof serverFormSchema>;
-
-const defaultValues: Partial<ServerFormValues> = {
+const defaultValues: FormValues = {
   name: "",
-  max_members: 64,
-  season_length_days: 40,
+  max_members: 20,
+  season_length_days: 90,
   entry_mode: "public",
+  registration_start: new Date(),
+  registration_deadline: new Date(),
   initial_budget: 5000000,
   budget_growth_per_season: 0.1,
   salary_cap: 70,
   salary_cap_penalty_percentage: 0.1,
   min_player_salary_percentage: 80,
   max_player_salary_percentage: 150,
+  enable_monetization: true,
   activate_clause: true,
   auto_clause_percentage: 200,
-  market_value_multiplier: 24,
-  enable_monetization: false,
-  match_frequency_minutes: 1440,
+  market_value_multiplier: 10,
+  transfer_window_open: true,
+  allow_free_agent_signing_outside_window: false,
+  match_frequency_minutes: 120,
   enable_auto_simulation: true,
-  red_card_penalty: 50000,
+  red_card_penalty: 10000,
   allow_penalty_waiver: true,
-  registration_start: new Date(),
-  registration_deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-  transfer_window_start: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-  transfer_window_end: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000),
 };
 
 export function ServerFormComplete() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
-  const form = useForm<ServerFormValues>({
-    resolver: zodResolver(serverFormSchema),
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues,
   });
 
-  async function onSubmit(data: ServerFormValues) {
+  async function onSubmit(data: FormValues) {
     try {
       setLoading(true);
-      const now = new Date();
+
       const serverData = {
         ...data,
         registration_start: data.registration_start.toISOString(),
         registration_deadline: data.registration_deadline.toISOString(),
-        transfer_window_start: data.transfer_window_start?.toISOString(),
-        transfer_window_end: data.transfer_window_end?.toISOString(),
-        transfer_window_open:
-          data.transfer_window_start && data.transfer_window_end
-            ? now >= data.transfer_window_start &&
-              now <= data.transfer_window_end
-            : false,
       };
       await createServer(serverData);
       toast({
@@ -208,7 +219,7 @@ export function ServerFormComplete() {
                             />
                           </FormControl>
                           <FormDescription>
-                            Número máximo de clubes permitidos (2-64)
+                            Número máximo de clubes permitidos (2-100)
                           </FormDescription>
                           <FormMessage />
                         </FormItem>
@@ -241,250 +252,94 @@ export function ServerFormComplete() {
 
                   <FormField
                     control={form.control}
-                    name="entry_mode"
+                    name="registration_start"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Modo de Entrada</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Selecione o modo de entrada" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="public">Público</SelectItem>
-                            <SelectItem value="private">Privado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Início das Inscrições</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", {
+                                    locale: ptBR,
+                                  })
+                                ) : (
+                                  <span>Selecione uma data</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) => date < new Date()}
+                            />
+                          </PopoverContent>
+                        </Popover>
                         <FormDescription>
-                          Define se o servidor é público ou privado
+                          Data de início das inscrições
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
                   />
-                </CardContent>
-              </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Datas</CardTitle>
-                  <CardDescription>
-                    Configure as datas importantes do servidor
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="registration_start"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Início das Inscrições</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP", {
-                                      locale: ptBR,
-                                    })
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => date < new Date()}
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormDescription>
-                            Data de início das inscrições
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="registration_deadline"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Prazo Final das Inscrições</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP", {
-                                      locale: ptBR,
-                                    })
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) =>
-                                  date < form.getValues("registration_start")
-                                }
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormDescription>
-                            Data limite para inscrições
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="transfer_window_start"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>
-                            Início da Janela de Transferências
-                          </FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP", {
-                                      locale: ptBR,
-                                    })
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => {
-                                  const startDate = form.getValues(
-                                    "transfer_window_start"
-                                  );
-                                  return startDate ? date < startDate : false;
-                                }}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormDescription>
-                            Data de início da janela de transferências
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="transfer_window_end"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Fim da Janela de Transferências</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(field.value, "PPP", {
-                                      locale: ptBR,
-                                    })
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={field.value}
-                                onSelect={field.onChange}
-                                disabled={(date) => {
-                                  const startDate = form.getValues(
-                                    "transfer_window_start"
-                                  );
-                                  return startDate ? date < startDate : false;
-                                }}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormDescription>
-                            Data de fim da janela de transferências
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                  <FormField
+                    control={form.control}
+                    name="registration_deadline"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-col">
+                        <FormLabel>Prazo Final das Inscrições</FormLabel>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant={"outline"}
+                                className={cn(
+                                  "w-full pl-3 text-left font-normal",
+                                  !field.value && "text-muted-foreground"
+                                )}
+                              >
+                                {field.value ? (
+                                  format(field.value, "PPP", {
+                                    locale: ptBR,
+                                  })
+                                ) : (
+                                  <span>Selecione uma data</span>
+                                )}
+                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0" align="start">
+                            <Calendar
+                              mode="single"
+                              selected={field.value}
+                              onSelect={field.onChange}
+                              disabled={(date) =>
+                                date < form.getValues("registration_start")
+                              }
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                        <FormDescription>
+                          Data limite para inscrições
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </CardContent>
               </Card>
             </TabsContent>
@@ -502,9 +357,9 @@ export function ServerFormComplete() {
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="initial_budget">
+                        <UILabel htmlFor="initial_budget">
                           Orçamento Inicial
-                        </Label>
+                        </UILabel>
                         <Input
                           id="initial_budget"
                           type="number"
@@ -518,9 +373,9 @@ export function ServerFormComplete() {
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="budget_growth_per_season">
+                        <UILabel htmlFor="budget_growth_per_season">
                           Crescimento do Orçamento por Temporada
-                        </Label>
+                        </UILabel>
                         <Input
                           id="budget_growth_per_season"
                           type="number"
@@ -539,7 +394,9 @@ export function ServerFormComplete() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="salary_cap">Teto Salarial (%)</Label>
+                        <UILabel htmlFor="salary_cap">
+                          Teto Salarial (%)
+                        </UILabel>
                         <Input
                           id="salary_cap"
                           type="number"
@@ -554,9 +411,9 @@ export function ServerFormComplete() {
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="salary_cap_penalty_percentage">
+                        <UILabel htmlFor="salary_cap_penalty_percentage">
                           Percentual de Multa por Exceder Teto Salarial
-                        </Label>
+                        </UILabel>
                         <Input
                           id="salary_cap_penalty_percentage"
                           type="number"
@@ -575,9 +432,9 @@ export function ServerFormComplete() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div className="space-y-2">
-                        <Label htmlFor="min_player_salary_percentage">
+                        <UILabel htmlFor="min_player_salary_percentage">
                           Percentual Mínimo de Salário do Jogador
-                        </Label>
+                        </UILabel>
                         <Input
                           id="min_player_salary_percentage"
                           type="number"
@@ -592,9 +449,9 @@ export function ServerFormComplete() {
                         </p>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="max_player_salary_percentage">
+                        <UILabel htmlFor="max_player_salary_percentage">
                           Percentual Máximo de Salário do Jogador
-                        </Label>
+                        </UILabel>
                         <Input
                           id="max_player_salary_percentage"
                           type="number"
@@ -617,9 +474,9 @@ export function ServerFormComplete() {
                         render={({ field }) => (
                           <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                             <div className="space-y-0.5">
-                              <FormLabel className="text-base">
+                              <UILabel className="text-base">
                                 Habilitar Monetização
-                              </FormLabel>
+                              </UILabel>
                               <FormDescription>
                                 Permite que os clubes ganhem dinheiro com
                                 ingressos, sócios e merchandising
@@ -657,9 +514,9 @@ export function ServerFormComplete() {
                       render={({ field }) => (
                         <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                           <div className="space-y-0.5">
-                            <FormLabel className="text-base">
+                            <UILabel className="text-base">
                               Cláusula de Rescisão
-                            </FormLabel>
+                            </UILabel>
                             <FormDescription>
                               Ativar cláusulas de rescisão automáticas
                             </FormDescription>
@@ -679,7 +536,7 @@ export function ServerFormComplete() {
                       name="auto_clause_percentage"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>% da Cláusula</FormLabel>
+                          <UILabel> % da Cláusula</UILabel>
                           <FormControl>
                             <Input
                               type="number"
@@ -704,7 +561,7 @@ export function ServerFormComplete() {
                     name="market_value_multiplier"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Multiplicador de Valor de Mercado</FormLabel>
+                        <UILabel>Multiplicador de Valor de Mercado</UILabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -722,6 +579,56 @@ export function ServerFormComplete() {
                       </FormItem>
                     )}
                   />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="transfer_window_open"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <UILabel className="text-base">
+                              Janela de Transferências Aberta
+                            </UILabel>
+                            <FormDescription>
+                              Permite que os clubes realizem transferências
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="allow_free_agent_signing_outside_window"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <UILabel className="text-base">
+                              Permitir Contratação de Jogadores Livres Fora da
+                              Janela
+                            </UILabel>
+                            <FormDescription>
+                              Permite que os clubes contratem jogadores sem
+                              clube mesmo fora da janela
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -741,7 +648,7 @@ export function ServerFormComplete() {
                     name="match_frequency_minutes"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Frequência de Partidas (minutos)</FormLabel>
+                        <UILabel>Frequência de Partidas (minutos)</UILabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -765,9 +672,9 @@ export function ServerFormComplete() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">
+                          <UILabel className="text-base">
                             Simulação Automática
-                          </FormLabel>
+                          </UILabel>
                           <FormDescription>
                             Ativar simulação automática de partidas
                           </FormDescription>
@@ -797,7 +704,7 @@ export function ServerFormComplete() {
                     name="red_card_penalty"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>Multa por Cartão Vermelho</FormLabel>
+                        <UILabel>Multa por Cartão Vermelho</UILabel>
                         <FormControl>
                           <Input
                             type="number"
@@ -821,9 +728,9 @@ export function ServerFormComplete() {
                     render={({ field }) => (
                       <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                         <div className="space-y-0.5">
-                          <FormLabel className="text-base">
+                          <UILabel className="text-base">
                             Permitir Isenção de Multas
-                          </FormLabel>
+                          </UILabel>
                           <FormDescription>
                             Permitir que multas sejam isentadas
                           </FormDescription>

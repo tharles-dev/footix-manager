@@ -67,6 +67,8 @@ const serverFormSchema = z.object({
   activate_clause: z.boolean(),
   auto_clause_percentage: z.number().min(100).max(1000),
   market_value_multiplier: z.number().min(1).max(100),
+  allow_free_agent_signing_outside_window: z.boolean(),
+  transfer_window_open: z.boolean(),
 
   // Simulação
   match_frequency_minutes: z.number().min(60),
@@ -79,8 +81,6 @@ const serverFormSchema = z.object({
   // Datas
   registration_start: z.string().optional(),
   registration_deadline: z.string().optional(),
-  transfer_window_start: z.string().optional(),
-  transfer_window_end: z.string().optional(),
 });
 
 type ServerFormValues = z.infer<typeof serverFormSchema>;
@@ -104,24 +104,10 @@ export function ServerFormEdit({ serverId, initialData }: ServerFormEditProps) {
       registration_deadline: initialData.registration_deadline
         ? initialData.registration_deadline.toString()
         : undefined,
-      transfer_window_start: initialData.transfer_window_start
-        ? initialData.transfer_window_start.toString()
-        : undefined,
-      transfer_window_end: initialData.transfer_window_end
-        ? initialData.transfer_window_end.toString()
-        : undefined,
     },
   });
 
   const onSubmit = (data: ServerFormValues) => {
-    const now = new Date();
-    const transferWindowStart = data.transfer_window_start
-      ? new Date(data.transfer_window_start)
-      : null;
-    const transferWindowEnd = data.transfer_window_end
-      ? new Date(data.transfer_window_end)
-      : null;
-
     const serverData = {
       ...data,
       registration_start: data.registration_start
@@ -130,16 +116,6 @@ export function ServerFormEdit({ serverId, initialData }: ServerFormEditProps) {
       registration_deadline: data.registration_deadline
         ? new Date(data.registration_deadline).toISOString()
         : undefined,
-      transfer_window_start: data.transfer_window_start
-        ? new Date(data.transfer_window_start).toISOString()
-        : undefined,
-      transfer_window_end: data.transfer_window_end
-        ? new Date(data.transfer_window_end).toISOString()
-        : undefined,
-      transfer_window_open:
-        transferWindowStart && transferWindowEnd
-          ? now >= transferWindowStart && now <= transferWindowEnd
-          : false,
     };
 
     setIsSubmitting(true);
@@ -401,128 +377,6 @@ export function ServerFormEdit({ serverId, initialData }: ServerFormEditProps) {
                       )}
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <FormField
-                      control={form.control}
-                      name="transfer_window_start"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>
-                            Início da Janela de Transferências
-                          </FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(new Date(field.value), "PPP", {
-                                      locale: ptBR,
-                                    })
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  field.value
-                                    ? new Date(field.value)
-                                    : undefined
-                                }
-                                onSelect={field.onChange}
-                                disabled={(date) => {
-                                  const startDate = form.getValues(
-                                    "transfer_window_start"
-                                  );
-                                  return startDate
-                                    ? date < new Date(startDate)
-                                    : false;
-                                }}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormDescription>
-                            Data de início da janela de transferências
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    <FormField
-                      control={form.control}
-                      name="transfer_window_end"
-                      render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                          <FormLabel>Fim da Janela de Transferências</FormLabel>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <FormControl>
-                                <Button
-                                  variant={"outline"}
-                                  className={cn(
-                                    "w-full pl-3 text-left font-normal",
-                                    !field.value && "text-muted-foreground"
-                                  )}
-                                >
-                                  {field.value ? (
-                                    format(new Date(field.value), "PPP", {
-                                      locale: ptBR,
-                                    })
-                                  ) : (
-                                    <span>Selecione uma data</span>
-                                  )}
-                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                                </Button>
-                              </FormControl>
-                            </PopoverTrigger>
-                            <PopoverContent
-                              className="w-auto p-0"
-                              align="start"
-                            >
-                              <Calendar
-                                mode="single"
-                                selected={
-                                  field.value
-                                    ? new Date(field.value)
-                                    : undefined
-                                }
-                                onSelect={field.onChange}
-                                disabled={(date) => {
-                                  const startDate = form.getValues(
-                                    "transfer_window_start"
-                                  );
-                                  return startDate
-                                    ? date < new Date(startDate)
-                                    : false;
-                                }}
-                                initialFocus
-                              />
-                            </PopoverContent>
-                          </Popover>
-                          <FormDescription>
-                            Data de fim da janela de transferências
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
@@ -760,6 +614,55 @@ export function ServerFormEdit({ serverId, initialData }: ServerFormEditProps) {
                       </FormItem>
                     )}
                   />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                      control={form.control}
+                      name="transfer_window_open"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Janela de Transferências
+                            </FormLabel>
+                            <FormDescription>
+                              Ativar janela de transferências
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+
+                    <FormField
+                      control={form.control}
+                      name="allow_free_agent_signing_outside_window"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                          <div className="space-y-0.5">
+                            <FormLabel className="text-base">
+                              Permitir Contratação de Jogadores Livres
+                            </FormLabel>
+                            <FormDescription>
+                              Permitir contratação de jogadores livres fora da
+                              janela
+                            </FormDescription>
+                          </div>
+                          <FormControl>
+                            <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>

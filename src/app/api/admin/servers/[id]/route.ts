@@ -29,9 +29,9 @@ const editServerSchema = z.object({
   red_card_penalty: z.number().min(0),
   allow_penalty_waiver: z.boolean(),
 
-  // Datas de janela de transferência
-  transfer_window_start: z.string().datetime().optional(),
-  transfer_window_end: z.string().datetime().optional(),
+  // Configurações de janela de transferência
+  transfer_window_open: z.boolean(),
+  allow_free_agent_signing_outside_window: z.boolean(),
 });
 
 export async function GET(
@@ -83,12 +83,9 @@ export async function GET(
         registration_deadline,
         season_length_days,
         entry_mode,
-        current_season_start,
-        current_season_end,
         registration_start,
         transfer_window_open,
-        transfer_window_start,
-        transfer_window_end,
+        allow_free_agent_signing_outside_window,
         initial_budget,
         budget_growth_per_season,
         salary_cap,
@@ -259,8 +256,9 @@ export async function PUT(
         enable_monetization: body.enable_monetization,
         red_card_penalty: body.red_card_penalty,
         allow_penalty_waiver: body.allow_penalty_waiver,
-        transfer_window_start: body.transfer_window_start,
-        transfer_window_end: body.transfer_window_end,
+        transfer_window_open: body.transfer_window_open,
+        allow_free_agent_signing_outside_window:
+          body.allow_free_agent_signing_outside_window,
         updated_at: new Date().toISOString(),
       })
       .eq("id", params.id)

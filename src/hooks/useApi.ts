@@ -198,9 +198,8 @@ export type ServerData = {
   current_season_start?: string;
   current_season_end?: string;
   registration_start?: string;
-  transfer_window_open?: boolean;
-  transfer_window_start?: string;
-  transfer_window_end?: string;
+  transfer_window_open: boolean;
+  allow_free_agent_signing_outside_window: boolean;
   initial_budget: number;
   budget_growth_per_season: number;
   salary_cap: number;
