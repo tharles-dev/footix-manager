@@ -90,14 +90,14 @@ export function TransferFilters({
       : undefined
   );
   const [search, setSearch] = useState(searchParams.get("search") || "");
-  const [position, setPosition] = useState<Position | undefined>(
-    (searchParams.get("position") as Position) || undefined
+  const [position, setPosition] = useState<Position>(
+    (searchParams.get("position") as Position) || "all"
   );
   const [transferAvailability, setTransferAvailability] = useState(
-    searchParams.get("transfer_availability") || ""
+    searchParams.get("transfer_availability") || "all"
   );
   const [hasContract, setHasContract] = useState<string>(
-    searchParams.get("has_contract") || ""
+    searchParams.get("has_contract") || "all"
   );
 
   const handleApplyFilters = () => {
@@ -125,8 +125,8 @@ export function TransferFilters({
     setMinValue(undefined);
     setMaxValue(undefined);
     setSearch("");
-    setPosition(undefined);
-    setTransferAvailability("");
+    setPosition("all");
+    setTransferAvailability("all");
     setHasContract("all");
   };
 

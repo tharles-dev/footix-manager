@@ -23,6 +23,7 @@ export interface Server {
   max_members: number;
   market_value_multiplier: number;
   auto_clause_percentage: number;
+  activate_clause: boolean;
 }
 
 export interface Club {

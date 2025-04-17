@@ -14,6 +14,8 @@ import { TrendingUp, TrendingDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TransferOfferForm } from "./TransferOfferForm";
 import { Club } from "@/types/club";
+import { PayClauseForm } from "./PayClauseForm";
+import { useApp } from "@/contexts/AppContext";
 
 interface PlayerDetailsProps {
   player: {
@@ -71,7 +73,9 @@ export function PlayerDetails({
 }: PlayerDetailsProps) {
   const [showHireForm, setShowHireForm] = useState(false);
   const [showOfferForm, setShowOfferForm] = useState(false);
+  const [showPayClauseForm, setShowPayClauseForm] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
+  const { server } = useApp();
 
   // Função para determinar a cor do badge de forma
   const getFormColor = (form: number) => {
@@ -336,9 +340,16 @@ export function PlayerDetails({
             </Button>
           )}
           {player.club && player.club.id !== club?.id && (
-            <Button onClick={() => setShowOfferForm(true)}>
-              Enviar Proposta
-            </Button>
+            <>
+              <Button onClick={() => setShowOfferForm(true)}>
+                Enviar Proposta
+              </Button>
+              {server?.activate_clause && (
+                <Button onClick={() => setShowPayClauseForm(true)}>
+                  Pagar Multa Rescisória
+                </Button>
+              )}
+            </>
           )}
         </div>
 
@@ -367,6 +378,30 @@ export function PlayerDetails({
               player={player}
               onSuccess={() => setShowOfferForm(false)}
               onCancel={() => setShowOfferForm(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showPayClauseForm} onOpenChange={setShowPayClauseForm}>
+          <DialogContent>
+            <DialogTitle>Pagar Multa Rescisória</DialogTitle>
+            <DialogDescription>
+              Confirme o pagamento da multa rescisória para contratar{" "}
+              {player.name}
+            </DialogDescription>
+            <PayClauseForm
+              player={{
+                id: player.id,
+                name: player.name,
+                contract: {
+                  clause_value: player.valor_clausula,
+                },
+              }}
+              onSuccess={() => {
+                setShowPayClauseForm(false);
+                onClose();
+              }}
+              onCancel={() => setShowPayClauseForm(false)}
             />
           </DialogContent>
         </Dialog>
