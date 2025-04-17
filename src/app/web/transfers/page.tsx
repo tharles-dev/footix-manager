@@ -4,25 +4,51 @@ import { PlayerCard } from "@/components/transfers/PlayerCard";
 import { TransferFilters } from "@/components/transfers/TransferFilters";
 import { useToast } from "@/components/ui/use-toast";
 import { Button } from "@/components/ui/button";
-import { Filter } from "lucide-react";
+import { Filter, BadgeDollarSign } from "lucide-react";
 import { Pagination } from "@/components/ui/pagination";
 import { useSearchParams, useRouter } from "next/navigation";
 
 interface Player {
   id: string;
   name: string;
-  overall: number;
-  position: string;
+  age: number;
   nationality: string;
-  club?: {
-    name: string;
-    user?: {
-      name: string;
-    };
-  };
+  position: string;
+  overall: number;
+  potential: number;
+  pace: number;
+  shooting: number;
+  passing: number;
+  dribbling: number;
+  defending: number;
+  physical: number;
   salario_atual: number;
   valor_mercado: number;
-  valor_clausula?: number;
+  valor_clausula: number;
+  salario_minimo: number;
+  salario_maximo: number;
+  morale: number;
+  form: number;
+  level: number;
+  is_star_player: boolean;
+  is_on_loan: boolean;
+  loan_from_club: {
+    id: string;
+    name: string;
+  } | null;
+  club: {
+    id: string;
+    name: string;
+    user: {
+      id: string;
+      name: string;
+    };
+  } | null;
+  acoes_disponiveis: {
+    pode_contratar: boolean;
+    pode_pagar_clausula: boolean;
+    pode_emprestar: boolean;
+  };
   image?: string;
 }
 
@@ -217,14 +243,24 @@ export default function TransfersPage() {
     <div className="container mx-auto p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Mercado de Transferências</h1>
-        <Button
-          onClick={() => setIsFiltersOpen(true)}
-          variant="outline"
-          className="flex items-center gap-2"
-        >
-          <Filter className="h-4 w-4" />
-          Filtros
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            onClick={() => router.push("/web/transfers/offers")}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <BadgeDollarSign className="h-4 w-4" />
+            Ver Ofertas
+          </Button>
+          <Button
+            onClick={() => setIsFiltersOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <Filter className="h-4 w-4" />
+            Filtros
+          </Button>
+        </div>
       </div>
 
       <TransferFilters
@@ -247,7 +283,7 @@ export default function TransfersPage() {
             <PlayerCard
               key={player.id}
               player={player}
-              onActionClick={() => handlePlayerAction(player)}
+              onSuccess={() => handlePlayerAction(player)}
             />
           ))}
         </div>

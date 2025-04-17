@@ -21,6 +21,8 @@ export interface Server {
   max_player_salary_percentage: number;
   current_members: number;
   max_members: number;
+  market_value_multiplier: number;
+  auto_clause_percentage: number;
 }
 
 export interface Club {

@@ -1,6 +1,7 @@
 export interface Club {
   id: string;
   name: string;
+  user_id: string;
   city: string;
   country: string;
   logo_url?: string;

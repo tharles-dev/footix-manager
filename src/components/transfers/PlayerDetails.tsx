@@ -11,6 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { HirePlayerForm } from "@/components/transfers/HirePlayerForm";
 import { TrendingUp, TrendingDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { TransferOfferForm } from "./TransferOfferForm";
+import { Club } from "@/types/club";
 
 interface PlayerDetailsProps {
   player: {
@@ -55,18 +58,19 @@ interface PlayerDetailsProps {
       pode_emprestar: boolean;
     };
   };
+  club?: Club;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess?: () => void;
 }
 
 export function PlayerDetails({
   player,
+  club,
   isOpen,
   onClose,
-  onSuccess,
 }: PlayerDetailsProps) {
   const [showHireForm, setShowHireForm] = useState(false);
+  const [showOfferForm, setShowOfferForm] = useState(false);
   const [activeTab, setActiveTab] = useState("info");
 
   // Função para determinar a cor do badge de forma
@@ -325,27 +329,47 @@ export function PlayerDetails({
           </TabsContent>
         </Tabs>
 
-        {player.acoes_disponiveis.pode_contratar && !showHireForm && (
-          <div className="flex justify-end mt-4">
-            <button
-              onClick={() => setShowHireForm(true)}
-              className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors"
-            >
+        <div className="flex justify-end gap-2">
+          {!player.club && (
+            <Button onClick={() => setShowHireForm(true)}>
               Contratar Jogador
-            </button>
-          </div>
-        )}
+            </Button>
+          )}
+          {player.club && player.club.id !== club?.id && (
+            <Button onClick={() => setShowOfferForm(true)}>
+              Enviar Proposta
+            </Button>
+          )}
+        </div>
 
-        {showHireForm && (
-          <HirePlayerForm
-            player={player}
-            onSuccess={() => {
-              setShowHireForm(false);
-              onSuccess?.();
-            }}
-            onCancel={() => setShowHireForm(false)}
-          />
-        )}
+        <Dialog open={showHireForm} onOpenChange={setShowHireForm}>
+          <DialogContent>
+            <DialogTitle>Contratar Jogador</DialogTitle>
+            <DialogDescription>
+              Preencha os detalhes para contratar o jogador {player.name}
+            </DialogDescription>
+            <HirePlayerForm
+              player={player}
+              onSuccess={() => setShowHireForm(false)}
+              onCancel={() => setShowHireForm(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={showOfferForm} onOpenChange={setShowOfferForm}>
+          <DialogContent>
+            <DialogTitle>Enviar Proposta de Transferência</DialogTitle>
+            <DialogDescription>
+              Preencha os detalhes para enviar uma proposta de transferência
+              para {player.name}
+            </DialogDescription>
+            <TransferOfferForm
+              player={player}
+              onSuccess={() => setShowOfferForm(false)}
+              onCancel={() => setShowOfferForm(false)}
+            />
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );

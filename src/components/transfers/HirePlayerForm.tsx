@@ -4,6 +4,8 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useToast } from "@/components/ui/use-toast";
 import { useApp } from "@/contexts/AppContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 interface HirePlayerFormProps {
   player: {
@@ -21,8 +23,6 @@ export function HirePlayerForm({
   onCancel,
 }: HirePlayerFormProps) {
   const { server, club } = useApp();
-  const [salary, setSalary] = useState(player.salario_atual);
-  const [duration, setDuration] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -38,8 +38,8 @@ export function HirePlayerForm({
         },
         body: JSON.stringify({
           playerId: player.id,
-          salary,
-          duration,
+          salary: player.salario_atual,
+          duration: 1,
           serverId: server?.id,
           clubId: club?.id,
         }),
@@ -72,12 +72,13 @@ export function HirePlayerForm({
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold">Contratar {player.name}</h3>
-        <p className="text-sm text-muted-foreground">
-          Preencha os detalhes do contrato do jogador
-        </p>
-      </div>
+      <Alert variant="info">
+        <InfoIcon className="h-4 w-4" />
+        <AlertDescription>
+          Jogadores livres são contratados com salário fixo e contrato de 1 ano.
+          Não é possível negociar os termos.
+        </AlertDescription>
+      </Alert>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
@@ -85,31 +86,21 @@ export function HirePlayerForm({
           <Input
             id="salary"
             type="number"
-            value={salary}
-            onChange={(e) => setSalary(Number(e.target.value))}
-            min={player.salario_atual}
-            required
+            value={player.salario_atual}
+            readOnly
+            disabled
           />
           <p className="text-sm text-muted-foreground">
-            Salário atual:{" "}
-            {new Intl.NumberFormat("pt-BR", {
-              style: "currency",
-              currency: "BRL",
-            }).format(player.salario_atual)}
+            O salário do jogador livre não pode ser negociado
           </p>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="duration">Duração do Contrato (anos)</Label>
-          <Input
-            id="duration"
-            type="number"
-            value={duration}
-            onChange={(e) => setDuration(Number(e.target.value))}
-            min={1}
-            max={5}
-            required
-          />
+          <Input id="duration" type="number" value={1} readOnly disabled />
+          <p className="text-sm text-muted-foreground">
+            Jogadores livres são contratados por 1 ano
+          </p>
         </div>
 
         <div className="flex justify-end gap-2">
