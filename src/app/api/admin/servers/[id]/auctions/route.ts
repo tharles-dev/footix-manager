@@ -26,7 +26,7 @@ const createAuctionSchema = z.object({
 
 // Schema de validação para atualização de leilão
 const updateAuctionSchema = z.object({
-  auction_id: z.string().uuid(),
+  player_id: z.string().uuid().optional(),
   starting_bid: z.number().min(100000).optional(),
   is_scheduled: z.boolean().optional(),
   countdown_minutes: z.number().min(1).max(1440).optional(),
@@ -309,12 +309,20 @@ export async function GET(
         );
       }
 
-      // Obter contagem total
-      const { count } = await supabase
+      // Obter contagem total considerando o filtro de status
+      let countQuery = supabase
         .from("auctions")
         .select("*", { count: "exact", head: true })
-        .eq("server_id", params.id)
-        .in("status", ["scheduled", "active"]);
+        .eq("server_id", params.id);
+
+      // Aplicar o mesmo filtro de status usado na query principal
+      if (status) {
+        countQuery = countQuery.eq("status", status);
+      } else {
+        countQuery = countQuery.in("status", ["scheduled", "active"]);
+      }
+
+      const { count } = await countQuery;
 
       return NextResponse.json({
         data: auctions,
@@ -337,7 +345,7 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string; auctionId: string } }
 ) {
   try {
     // Validar se é um admin
@@ -369,7 +377,7 @@ export async function PUT(
     const { data: existingAuction, error: auctionError } = await supabase
       .from("auctions")
       .select("*")
-      .eq("id", validatedData.auction_id)
+      .eq("id", params.auctionId)
       .eq("server_id", params.id)
       .single();
 
@@ -411,7 +419,7 @@ export async function PUT(
       const { error: updateError } = await supabase
         .from("auctions")
         .update(updateData)
-        .eq("id", validatedData.auction_id);
+        .eq("id", params.auctionId);
 
       if (updateError) {
         console.error("Erro ao atualizar datas do leilão:", updateError);
@@ -426,6 +434,7 @@ export async function PUT(
     const { data: updatedAuction, error: updateError } = await supabase
       .from("auctions")
       .update({
+        player_id: validatedData.player_id || existingAuction.player_id,
         starting_bid:
           validatedData.starting_bid || existingAuction.starting_bid,
         current_bid: validatedData.starting_bid || existingAuction.current_bid,
@@ -433,12 +442,12 @@ export async function PUT(
           validatedData.is_scheduled ?? existingAuction.is_scheduled,
         countdown_minutes:
           validatedData.countdown_minutes || existingAuction.countdown_minutes,
-        scheduled_start_time:
-          validatedData.scheduled_start_time ||
-          existingAuction.scheduled_start_time,
+        scheduled_start_time: validatedData.scheduled_start_time
+          ? new Date(validatedData.scheduled_start_time).toISOString()
+          : existingAuction.scheduled_start_time,
         end_time: endTime,
       })
-      .eq("id", validatedData.auction_id)
+      .eq("id", params.auctionId)
       .select()
       .single();
 

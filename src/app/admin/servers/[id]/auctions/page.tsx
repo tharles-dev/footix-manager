@@ -4,14 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import {
-  Loader2,
-  TrendingUp,
-  TrendingDown,
-  Eye,
-  Clock,
-  Edit,
-} from "lucide-react";
+import { Loader2, TrendingUp, TrendingDown, Eye, Edit } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -58,23 +51,19 @@ type Player = {
   overall: number;
   potential: number;
   value: number;
-  has_scheduled_auction?: boolean;
   club?: {
     id: string;
     name: string;
     logo_url?: string;
   };
-};
-
-// Tipo para os leilões
-type Auction = {
-  id: string;
-  player_id: string;
-  starting_bid: number;
-  scheduled_start_time: string;
-  countdown_minutes: number;
-  status: "scheduled" | "active" | "completed";
-  player: Player;
+  auction_status: "free" | "scheduled" | "active";
+  auction?: {
+    id: string;
+    status: string;
+    scheduled_start_time: string;
+    starting_bid: number;
+    countdown_minutes: number;
+  };
 };
 
 // Schema de validação para o formulário de leilão
@@ -111,8 +100,7 @@ export default function ServerAuctionsPage() {
   const [currentFilter, setCurrentFilter] = useState<
     "all" | "scheduled" | "available"
   >("all");
-  const [editingAuction, setEditingAuction] = useState<Auction | null>(null);
-  const [scheduledAuctions, setScheduledAuctions] = useState<Auction[]>([]);
+  const [editingAuction, setEditingAuction] = useState<Player | null>(null);
 
   // Inicializar o formulário
   const form = useForm<AuctionFormValues>({
@@ -125,7 +113,7 @@ export default function ServerAuctionsPage() {
   });
 
   // Buscar jogadores disponíveis
-  const fetchAvailablePlayers = useCallback(
+  const fetchPlayers = useCallback(
     async (filter: "all" | "scheduled" | "available" = "all") => {
       try {
         setIsLoading(true);
@@ -134,7 +122,11 @@ export default function ServerAuctionsPage() {
             params.id
           }/players/available?page=${page}&limit=${limit}${
             search ? `&search=${search}` : ""
-          }${selectedPosition ? `&position=${selectedPosition}` : ""}`,
+          }${selectedPosition ? `&position=${selectedPosition}` : ""}${
+            filter !== "all"
+              ? `&type=${filter === "scheduled" ? "scheduled" : "free"}`
+              : ""
+          }`,
           {
             credentials: "include",
             headers: {
@@ -148,43 +140,7 @@ export default function ServerAuctionsPage() {
           throw new Error(data.error || "Erro ao buscar jogadores");
         }
 
-        // Buscar leilões agendados para verificar quais jogadores já têm agendamento
-        const auctionsResponse = await fetch(
-          `/api/admin/servers/${params.id}/auctions?status=scheduled`,
-          {
-            credentials: "include",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        const auctionsData = await auctionsResponse.json();
-
-        if (auctionsResponse.ok && auctionsData.data) {
-          const scheduledPlayerIds = auctionsData.data.map(
-            (auction: Auction) => auction.player_id
-          );
-
-          // Marcar jogadores que já têm leilão agendado
-          const playersWithAuctionInfo = data.data.map((player: Player) => ({
-            ...player,
-            has_scheduled_auction: scheduledPlayerIds.includes(player.id),
-          }));
-
-          // Filtrar jogadores com base no parâmetro filter
-          const filteredPlayers = playersWithAuctionInfo.filter(
-            (player: Player) => {
-              if (filter === "scheduled") return player.has_scheduled_auction;
-              if (filter === "available") return !player.has_scheduled_auction;
-              return true; // 'all' não aplica filtro
-            }
-          );
-
-          setPlayers(filteredPlayers);
-        } else {
-          setPlayers(data.data);
-        }
-
+        setPlayers(data.data);
         setTotalPages(data.pagination.pages);
       } catch (error) {
         console.error("Erro ao buscar jogadores:", error);
@@ -203,58 +159,100 @@ export default function ServerAuctionsPage() {
     [params.id, page, limit, search, selectedPosition, toast]
   );
 
-  // Buscar leilões agendados
-  const fetchScheduledAuctions = useCallback(async () => {
-    try {
-      const response = await fetch(
-        `/api/admin/servers/${serverId}/auctions?status=scheduled`,
-        {
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Erro ao buscar leilões agendados");
-      }
-
-      setScheduledAuctions(data.data || []);
-    } catch (error) {
-      console.error("Erro ao buscar leilões agendados:", error);
-      toast({
-        title: "Erro",
-        description:
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar leilões agendados",
-        variant: "destructive",
-      });
-    }
-  }, [serverId, toast]);
-
-  // Carregar jogadores ao montar o componente
+  // Efeito para buscar jogadores quando os filtros mudarem
   useEffect(() => {
-    fetchAvailablePlayers(currentFilter);
-    fetchScheduledAuctions();
-  }, [
-    serverId,
-    page,
-    search,
-    selectedPosition,
-    currentFilter,
-    fetchAvailablePlayers,
-    fetchScheduledAuctions,
-  ]);
+    fetchPlayers(currentFilter);
+  }, [fetchPlayers, currentFilter, page]);
 
-  // Função para formatar valores monetários
+  // Formatar moeda
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
-      currency: "BRL",
+      currency: "EUR",
     }).format(value);
+  };
+
+  // Formatar data
+  const formatDate = (date: string) => {
+    return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
+  };
+
+  // Função para lidar com a edição de um leilão
+  const handleEditAuction = (player: Player) => {
+    if (player.auction) {
+      setEditingAuction(player);
+      form.setValue("player_id", player.id);
+      form.setValue("starting_bid", player.auction.starting_bid);
+      form.setValue("countdown_minutes", player.auction.countdown_minutes);
+      form.setValue(
+        "scheduled_start_time",
+        player.auction.scheduled_start_time
+      );
+      setIsDialogOpen(true);
+    }
+  };
+
+  // Função para lidar com o agendamento de um novo leilão
+  const handleScheduleAuction = (player: Player) => {
+    setEditingAuction(null);
+    form.setValue("player_id", player.id);
+    form.setValue("starting_bid", player.value || 1000000);
+    form.setValue("countdown_minutes", 60);
+
+    // Definir data e hora atual + 1 hora como padrão
+    const now = new Date();
+    now.setHours(now.getHours() + 1);
+    const formattedDate = now.toISOString().slice(0, 16);
+    form.setValue("scheduled_start_time", formattedDate);
+
+    setIsDialogOpen(true);
+  };
+
+  // Função para lidar com o envio do formulário
+  const onSubmit = async (data: AuctionFormValues) => {
+    try {
+      const isEditing = editingAuction !== null;
+      const url = `/api/admin/servers/${serverId}/auctions${
+        isEditing && editingAuction.auction
+          ? `/${editingAuction.auction.id}`
+          : ""
+      }`;
+
+      const response = await fetch(url, {
+        method: isEditing ? "PUT" : "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        throw new Error(responseData.error || "Erro ao salvar leilão");
+      }
+
+      toast({
+        title: "Sucesso",
+        description: isEditing
+          ? "Leilão atualizado com sucesso"
+          : "Leilão criado com sucesso",
+      });
+
+      setIsDialogOpen(false);
+      setEditingAuction(null);
+      form.reset();
+      fetchPlayers(currentFilter);
+    } catch (error) {
+      console.error("Erro ao salvar leilão:", error);
+      toast({
+        title: "Erro",
+        description:
+          error instanceof Error ? error.message : "Erro ao salvar leilão",
+        variant: "destructive",
+      });
+    }
   };
 
   // Função para determinar a cor do badge de overall
@@ -292,120 +290,6 @@ export default function ServerAuctionsPage() {
     }
   };
 
-  // Função para formatar datas
-  const formatDate = (date: string) => {
-    return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
-  };
-
-  // Função para abrir o formulário de edição
-  const handleEditAuction = async (auction: Auction) => {
-    try {
-      const response = await fetch(
-        `/api/admin/servers/${serverId}/auctions/${auction.id}`,
-        {
-          credentials: "include",
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Erro ao carregar detalhes do leilão");
-      }
-
-      const { data } = await response.json();
-      setEditingAuction(data);
-
-      // Preencher o formulário com os dados do leilão
-      form.setValue("player_id", data.player_id);
-      form.setValue("starting_bid", data.starting_bid);
-      form.setValue("is_scheduled", data.is_scheduled);
-      form.setValue("countdown_minutes", data.countdown_minutes);
-
-      // Usar a data exata que vem da API, sem conversão de fuso horário
-      form.setValue(
-        "scheduled_start_time",
-        data.scheduled_start_time.slice(0, 16)
-      );
-
-      setIsDialogOpen(true);
-    } catch (error) {
-      console.error("Erro ao carregar detalhes do leilão:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os detalhes do leilão",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Função para lidar com o envio do formulário
-  const onSubmit = async (data: AuctionFormValues) => {
-    try {
-      // Usar a data exata do formulário, sem conversão de fuso horário
-      const formattedData = {
-        ...data,
-        scheduled_start_time: data.scheduled_start_time,
-      };
-
-      const endpoint = editingAuction
-        ? `/api/admin/servers/${serverId}/auctions/${editingAuction.id}`
-        : `/api/admin/servers/${serverId}/auctions`;
-
-      const method = editingAuction ? "PUT" : "POST";
-
-      const response = await fetch(endpoint, {
-        method,
-        credentials: "include",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formattedData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro ao salvar leilão");
-      }
-
-      toast({
-        title: "Sucesso",
-        description: editingAuction
-          ? "Leilão atualizado com sucesso"
-          : "Leilão criado com sucesso",
-      });
-
-      setIsDialogOpen(false);
-      setEditingAuction(null);
-      form.reset();
-
-      // Atualizar a lista de leilões e jogadores
-      await Promise.all([
-        fetchAvailablePlayers(currentFilter),
-        fetchScheduledAuctions(),
-      ]);
-    } catch (error) {
-      console.error("Erro ao salvar leilão:", error);
-      toast({
-        title: "Erro",
-        description:
-          error instanceof Error ? error.message : "Erro ao salvar leilão",
-        variant: "destructive",
-      });
-    }
-  };
-
-  // Função para abrir o formulário de criação
-  const handleCreateAuction = (playerId: string) => {
-    setEditingAuction(null);
-    form.reset({
-      player_id: playerId,
-      starting_bid: 1000000,
-      is_scheduled: true,
-      scheduled_start_time: new Date().toISOString().slice(0, 16),
-      countdown_minutes: 60,
-    });
-    setIsDialogOpen(true);
-  };
-
   return (
     <div className="space-y-4">
       <Card>
@@ -440,131 +324,9 @@ export default function ServerAuctionsPage() {
               <div className="flex justify-center py-8">
                 <Loader2 className="h-8 w-8 animate-spin" />
               </div>
-            ) : currentFilter === "scheduled" ? (
-              scheduledAuctions.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum leilão agendado encontrado
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {scheduledAuctions.map((auction) => {
-                    const player = auction.player;
-                    const countryCode = player.nationality
-                      ? getCountryCode(player.nationality)
-                      : "BR";
-
-                    return (
-                      <Card key={auction.id} className="overflow-hidden">
-                        <CardHeader className="p-4 pb-0">
-                          <div className="flex items-center gap-3">
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage
-                                src={`/assets/flags/${countryCode.toLowerCase()}.svg`}
-                                alt={player.nationality || "Brasil"}
-                              />
-                              <AvatarFallback>{countryCode}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2">
-                                <h3 className="font-semibold truncate">
-                                  {player.name}
-                                </h3>
-                              </div>
-                              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                <Badge
-                                  variant="outline"
-                                  className={getPositionColor(player.position)}
-                                >
-                                  {player.position}
-                                </Badge>
-                                {player.age && (
-                                  <>
-                                    <span>•</span>
-                                    <span>{player.age} anos</span>
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                            <div className="flex flex-col items-end">
-                              <Badge
-                                className={`${getOverallColor(
-                                  player.overall
-                                )} text-white text-lg`}
-                              >
-                                {player.overall}
-                              </Badge>
-                              {player.potential &&
-                                player.potential > player.overall && (
-                                  <div className="flex items-center text-xs text-green-600 mt-1">
-                                    <TrendingUp className="h-3 w-3 mr-1" />
-                                    <span>
-                                      +{player.potential - player.overall}
-                                    </span>
-                                  </div>
-                                )}
-                              {player.potential &&
-                                player.potential < player.overall && (
-                                  <div className="flex items-center text-xs text-red-600 mt-1">
-                                    <TrendingDown className="h-3 w-3 mr-1" />
-                                    <span>
-                                      {player.potential - player.overall}
-                                    </span>
-                                  </div>
-                                )}
-                            </div>
-                          </div>
-                        </CardHeader>
-                        <CardContent className="p-4">
-                          <div className="grid grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <p className="text-muted-foreground">
-                                Lance Inicial:
-                              </p>
-                              <p className="font-medium">
-                                {formatCurrency(auction.starting_bid)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Início:</p>
-                              <p className="font-medium">
-                                {formatDate(auction.scheduled_start_time)}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Duração:</p>
-                              <p className="font-medium">
-                                {auction.countdown_minutes} minutos
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-muted-foreground">Status:</p>
-                              <Badge
-                                variant="outline"
-                                className="bg-amber-100 text-amber-800 border-amber-300"
-                              >
-                                Agendado
-                              </Badge>
-                            </div>
-                          </div>
-                        </CardContent>
-                        <div className="p-4 pt-0">
-                          <Button
-                            className="w-full"
-                            variant="outline"
-                            onClick={() => handleEditAuction(auction)}
-                          >
-                            <Edit className="h-4 w-4 mr-2" />
-                            Editar
-                          </Button>
-                        </div>
-                      </Card>
-                    );
-                  })}
-                </div>
-              )
             ) : players.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                Nenhum jogador livre encontrado
+                Nenhum jogador encontrado
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -649,24 +411,94 @@ export default function ServerAuctionsPage() {
                             </p>
                           </div>
                         </div>
-                        {player.has_scheduled_auction && (
-                          <div className="mt-2 flex items-center text-xs text-amber-600">
-                            <Clock className="h-3 w-3 mr-1" />
-                            <span>Leilão já agendado</span>
-                          </div>
-                        )}
+                        {player.auction_status === "scheduled" &&
+                          player.auction && (
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">
+                                  Lance Inicial:
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(player.auction.starting_bid)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Início:</p>
+                                <p className="font-medium">
+                                  {formatDate(
+                                    player.auction.scheduled_start_time
+                                  )}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">
+                                  Duração:
+                                </p>
+                                <p className="font-medium">
+                                  {player.auction.countdown_minutes} minutos
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Status:</p>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-amber-100 text-amber-800 border-amber-300"
+                                >
+                                  Agendado
+                                </Badge>
+                              </div>
+                            </div>
+                          )}
+                        {player.auction_status === "active" &&
+                          player.auction && (
+                            <div className="mt-2 grid grid-cols-2 gap-2 text-sm">
+                              <div>
+                                <p className="text-muted-foreground">
+                                  Lance Inicial:
+                                </p>
+                                <p className="font-medium">
+                                  {formatCurrency(player.auction.starting_bid)}
+                                </p>
+                              </div>
+                              <div>
+                                <p className="text-muted-foreground">Status:</p>
+                                <Badge
+                                  variant="outline"
+                                  className="bg-green-100 text-green-800 border-green-300"
+                                >
+                                  Ativo
+                                </Badge>
+                              </div>
+                            </div>
+                          )}
                       </CardContent>
                       <div className="p-4 pt-0 flex justify-between">
-                        <Button
-                          className="w-full"
-                          onClick={() => handleCreateAuction(player.id)}
-                          disabled={player.has_scheduled_auction}
-                        >
-                          <Eye className="h-4 w-4 mr-2" />
-                          {player.has_scheduled_auction
-                            ? "Já Agendado"
-                            : "Agendar"}
-                        </Button>
+                        {player.auction_status === "scheduled" &&
+                        player.auction ? (
+                          <Button
+                            className="w-full"
+                            variant="outline"
+                            onClick={() => handleEditAuction(player)}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                        ) : (
+                          <Button
+                            className="w-full"
+                            onClick={() =>
+                              player.auction_status === "free"
+                                ? handleScheduleAuction(player)
+                                : handleEditAuction(player)
+                            }
+                            disabled={player.auction_status !== "free"}
+                          >
+                            <Eye className="h-4 w-4 mr-2" />
+                            {player.auction_status !== "free"
+                              ? "Já Agendado"
+                              : "Agendar"}
+                          </Button>
+                        )}
                       </div>
                     </Card>
                   );

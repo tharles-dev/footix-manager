@@ -8,7 +8,19 @@ const updateAuctionSchema = z.object({
   starting_bid: z
     .number()
     .min(100000, "Lance inicial deve ser pelo menos 100.000"),
-  scheduled_start_time: z.string().datetime(),
+  scheduled_start_time: z.string().refine((date) => {
+    try {
+      // Verifica se a data está no formato correto (YYYY-MM-DDTHH:mm)
+      const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
+      if (!regex.test(date)) return false;
+
+      // Tenta criar um objeto Date para validar
+      const parsedDate = new Date(date);
+      return !isNaN(parsedDate.getTime());
+    } catch {
+      return false;
+    }
+  }, "Data inválida"),
   countdown_minutes: z
     .number()
     .min(1, "O tempo deve ser pelo menos 1 minuto")

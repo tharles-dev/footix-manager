@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient } from "@/lib/supabase/";
+import { createServerClient } from "@/lib/supabase";
 import { cookies } from "next/headers";
 
 export async function GET(
@@ -7,95 +7,151 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // Validar se é um admin
+    // Inicializa Supabase
     const supabase = createServerClient(cookies());
+
+    // Autenticação do usuário
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser();
-
-    if (!user) {
+    if (userError || !user) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Verificar se o usuário é admin
-    const { data: adminData } = await supabase
+    // Verifica se é admin
+    const { data: adminData, error: adminError } = await supabase
       .from("users")
       .select("role")
       .eq("id", user.id)
       .single();
-
-    if (!adminData || adminData.role !== "admin") {
+    if (adminError || !adminData || adminData.role !== "admin") {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }
 
-    // Obter parâmetros de query
+    // Parâmetros de paginação e filtro
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search");
-    const position = searchParams.get("position");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "10");
+    const page = parseInt(searchParams.get("page") ?? "1");
+    const limit = parseInt(searchParams.get("limit") ?? "10");
     const offset = (page - 1) * limit;
+    const type = searchParams.get("type") || "all"; // 'all', 'scheduled' ou 'free'
 
-    // Construir query base
-    let query = supabase
+    // 1) Conta total de players com auction_only
+    const { count: totalCount, error: totalError } = await supabase
       .from("server_players")
-      .select(
-        `
+      .select("id", { count: "exact", head: true })
+      .eq("server_id", params.id)
+      .eq("transfer_availability", "auction_only");
+    if (totalError) throw totalError;
+
+    // 2) Conta quantos players têm pelo menos um leilão agendado
+    let scheduledCount = 0;
+    if (type === "scheduled" || type === "free") {
+      const { count: schedCount, error: schedError } = await supabase
+        .from("auctions")
+        .select("player_id", {
+          count: "exact",
+          head: true,
+          // @ts-expect-error - O tipo do Supabase não inclui a propriedade 'count' no retorno da query
+          distinct: "player_id",
+        })
+        .eq("server_id", params.id)
+        .eq("status", "scheduled");
+      if (schedError) throw schedError;
+      scheduledCount = schedCount ?? 0;
+    }
+
+    // 3) Determina totalItems conforme tipo
+    let totalItems: number;
+    if (type === "scheduled") totalItems = scheduledCount;
+    else if (type === "free") totalItems = (totalCount ?? 0) - scheduledCount;
+    else totalItems = totalCount ?? 0;
+
+    // Seleção dinâmica para INNER JOIN se necessário
+    const auctionJoin =
+      type === "scheduled"
+        ? "auctions!inner!auctions_player_id_fkey"
+        : "auctions!auctions_player_id_fkey";
+
+    const selectStr = `
+      *,
+      club:clubs!server_players_club_id_fkey (
         id,
         name,
-        position,
-        overall,
-        club:clubs!server_players_club_id_fkey (
-          id,
-          name,
-          logo_url
-        ),
-        contract,
-        transfer_availability
-      `,
-        { count: "exact" }
+        logo_url
+      ),
+      ${auctionJoin} (
+        id,
+        status,
+        scheduled_start_time,
+        starting_bid,
+        countdown_minutes
       )
+    `;
+
+    // Query principal com filtro correto
+    let query = supabase
+      .from("server_players")
+      .select(selectStr)
       .eq("server_id", params.id)
       .eq("transfer_availability", "auction_only")
       .order("overall", { ascending: false });
 
-    // Aplicar filtros adicionais
-    if (search) {
-      query = query.ilike("name", `%${search}%`);
+    if (type === "scheduled") {
+      query = query.eq("auctions.status", "scheduled");
+    } else if (type === "free") {
+      query = query.is("auctions.id", null);
     }
 
-    if (position) {
-      query = query.eq("position", position);
-    }
+    // Paginação
+    query = query.range(offset, offset + limit - 1);
 
-    // Executar query com paginação
-    const {
-      data: players,
-      error,
-      count,
-    } = await query.range(offset, offset + limit - 1);
+    const { data: players, error: playersError } = await query;
+    if (playersError) throw playersError;
 
-    if (error) {
-      console.error("Erro ao buscar jogadores:", error);
-      return NextResponse.json(
-        { error: "Erro ao buscar jogadores" },
-        { status: 500 }
+    // Processamento final dos players
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const processedPlayers = (players || []).map((player: any) => {
+      const hasScheduledAuction = player.auctions?.some(
+        (a: { status: string }) => a.status === "scheduled"
       );
-    }
+      const hasActiveAuction = player.auctions?.some(
+        (a: { status: string }) => a.status === "active"
+      );
+      let auctionStatus = "free";
+      if (hasScheduledAuction) auctionStatus = "scheduled";
+      else if (hasActiveAuction) auctionStatus = "active";
 
-    // Mapear os jogadores para incluir o valor
-    const playersWithValue = players?.map((player) => ({
-      ...player,
-      value: player.contract?.clause_value || 0,
-    }));
+      const latestAuction = player.auctions?.length
+        ? player.auctions.reduce(
+            (
+              latest: { scheduled_start_time: string },
+              current: { scheduled_start_time: string }
+            ) =>
+              new Date(current.scheduled_start_time) >
+              new Date(latest.scheduled_start_time)
+                ? current
+                : latest
+          )
+        : null;
+
+      return {
+        ...player,
+        value: player.contract?.clause_value ?? 0,
+        has_scheduled_auction: hasScheduledAuction,
+        has_active_auction: hasActiveAuction,
+        auction_status: auctionStatus,
+        auction: latestAuction,
+      };
+    });
 
     return NextResponse.json({
-      data: playersWithValue,
+      data: processedPlayers,
       pagination: {
-        total: count || 0,
+        total: totalItems,
         page,
         limit,
-        pages: Math.ceil((count || 0) / limit),
+        pages: Math.ceil(totalItems / limit),
       },
     });
   } catch (error) {
