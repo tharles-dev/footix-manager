@@ -25,6 +25,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Slider } from "@/components/ui/slider";
 
@@ -47,6 +49,15 @@ export default function PlayersPage() {
     max_overall: 99,
     base_salary: 10000,
     market_value_multiplier: 0.1,
+  });
+  const [isAvailabilityModalOpen, setIsAvailabilityModalOpen] = useState(false);
+  const [availabilityParams, setAvailabilityParams] = useState({
+    min_overall: 1,
+    max_overall: 99,
+    transfer_availability: "available" as
+      | "available"
+      | "auction_only"
+      | "unavailable",
   });
 
   const playersService = useMemo(() => new PlayersService(), []);
@@ -125,6 +136,52 @@ export default function PlayersPage() {
 
   const handleMaxOverallChange = (value: number[]) => {
     setSalaryParams((prev) => ({ ...prev, max_overall: value[0] }));
+  };
+
+  const handleAvailabilityMinOverallChange = (value: number[]) => {
+    setAvailabilityParams((prev) => ({ ...prev, min_overall: value[0] }));
+  };
+
+  const handleAvailabilityMaxOverallChange = (value: number[]) => {
+    setAvailabilityParams((prev) => ({ ...prev, max_overall: value[0] }));
+  };
+
+  const handleUpdateAvailability = async (data: {
+    min_overall: number;
+    max_overall: number;
+    transfer_availability: "available" | "auction_only" | "unavailable";
+  }) => {
+    try {
+      const response = await fetch("/api/admin/players/global/availability", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (!response.ok) {
+        throw new Error("Erro ao atualizar disponibilidade");
+      }
+
+      const result = await response.json();
+
+      toast({
+        title: "Sucesso!",
+        description: `${result.updated_players.length} jogadores atualizados com sucesso.`,
+      });
+
+      // Recarregar a lista de jogadores
+      loadPlayers();
+    } catch (error) {
+      console.error("Erro ao atualizar disponibilidade:", error);
+      toast({
+        title: "Erro",
+        description:
+          "Não foi possível atualizar a disponibilidade dos jogadores.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleImportCSV = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -280,6 +337,95 @@ export default function PlayersPage() {
                       Atualizar Salários
                     </Button>
                   </div>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog
+                open={isAvailabilityModalOpen}
+                onOpenChange={setIsAvailabilityModalOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button variant="outline">Ajustar Disponibilidade</Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>
+                      Ajustar Disponibilidade para Transferência
+                    </DialogTitle>
+                    <DialogDescription>
+                      Selecione o intervalo de overall e a disponibilidade
+                      desejada.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="grid gap-4 py-4">
+                    <div className="grid gap-2">
+                      <Label>Overall Mínimo</Label>
+                      <Slider
+                        min={1}
+                        max={99}
+                        step={1}
+                        defaultValue={[availabilityParams.min_overall]}
+                        onValueChange={handleAvailabilityMinOverallChange}
+                      />
+                      <div className="text-sm text-muted-foreground">
+                        {availabilityParams.min_overall}
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Overall Máximo</Label>
+                      <Slider
+                        min={1}
+                        max={99}
+                        step={1}
+                        defaultValue={[availabilityParams.max_overall]}
+                        onValueChange={handleAvailabilityMaxOverallChange}
+                      />
+                      <div className="text-sm text-muted-foreground">
+                        {availabilityParams.max_overall}
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Disponibilidade</Label>
+                      <Select
+                        value={availabilityParams.transfer_availability}
+                        onValueChange={(
+                          value: "available" | "auction_only" | "unavailable"
+                        ) =>
+                          setAvailabilityParams((prev) => ({
+                            ...prev,
+                            transfer_availability: value,
+                          }))
+                        }
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Selecione a disponibilidade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="available">Disponível</SelectItem>
+                          <SelectItem value="auction_only">
+                            Apenas Leilão
+                          </SelectItem>
+                          <SelectItem value="unavailable">
+                            Indisponível
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      onClick={() =>
+                        handleUpdateAvailability({
+                          min_overall: availabilityParams.min_overall,
+                          max_overall: availabilityParams.max_overall,
+                          transfer_availability:
+                            availabilityParams.transfer_availability,
+                        })
+                      }
+                    >
+                      Atualizar Disponibilidade
+                    </Button>
+                  </DialogFooter>
                 </DialogContent>
               </Dialog>
 

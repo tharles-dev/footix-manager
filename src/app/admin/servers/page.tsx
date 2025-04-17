@@ -12,6 +12,7 @@ import {
   Trophy,
   Building,
   Trash2,
+  Gavel,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -222,6 +223,15 @@ function ServerCard({
                 >
                   <Building className="mr-2 h-4 w-4" />
                   <span>Gerenciar Clubes</span>
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link
+                  href={`/admin/servers/${server.id}/auctions`}
+                  className="flex items-center"
+                >
+                  <Gavel className="mr-2 h-4 w-4" />
+                  <span>Gerenciar Leilões</span>
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={(e) => e.preventDefault()}>

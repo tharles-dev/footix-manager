@@ -36,6 +36,17 @@ export interface UpdateGlobalPlayersSalaryResponse {
   data: UpdateGlobalPlayersSalaryData;
 }
 
+export interface UpdateGlobalPlayersAvailabilityData {
+  updated_players: number;
+  min_overall: number;
+  max_overall: number;
+  transfer_availability: "available" | "auction_only" | "unavailable";
+}
+
+export interface UpdateGlobalPlayersAvailabilityResponse {
+  data: UpdateGlobalPlayersAvailabilityData;
+}
+
 export class PlayersService extends ApiService {
   async importPlayers(file: File): Promise<ImportPlayersResponse> {
     try {
@@ -146,6 +157,17 @@ export class PlayersService extends ApiService {
   }): Promise<UpdateGlobalPlayersSalaryResponse> {
     return this.post<UpdateGlobalPlayersSalaryData>(
       "/players/global/salary",
+      params
+    );
+  }
+
+  async updateGlobalPlayersAvailability(params: {
+    min_overall: number;
+    max_overall: number;
+    transfer_availability: "available" | "auction_only" | "unavailable";
+  }): Promise<UpdateGlobalPlayersAvailabilityResponse> {
+    return this.post<UpdateGlobalPlayersAvailabilityData>(
+      "/players/global/availability",
       params
     );
   }
