@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
 import { Eye, TrendingUp, TrendingDown, Calendar } from "lucide-react";
 import { getCountryCode } from "@/lib/utils/country";
-import { formatCurrency } from "@/lib/utils";
+import { formatLargeNumber } from "@/lib/utils";
 import { useCountdown } from "@/hooks/useCountdown";
 
 interface AuctionCardProps {
@@ -152,13 +152,21 @@ export function AuctionCard({
         <div className="grid grid-cols-2 gap-2 text-sm">
           <div>
             <p className="text-muted-foreground">Lance Atual:</p>
-            <p className="font-medium">{formatCurrency(auction.current_bid)}</p>
+            <p
+              className="font-medium"
+              dangerouslySetInnerHTML={{
+                __html: formatLargeNumber(auction.current_bid),
+              }}
+            />
           </div>
           <div>
             <p className="text-muted-foreground">Lance Inicial:</p>
-            <p className="font-medium">
-              {formatCurrency(auction.starting_bid)}
-            </p>
+            <p
+              className="font-medium"
+              dangerouslySetInnerHTML={{
+                __html: formatLargeNumber(auction.starting_bid),
+              }}
+            />
           </div>
           <div>
             <p className="text-muted-foreground">Vendedor:</p>

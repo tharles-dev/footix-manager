@@ -32,6 +32,7 @@ interface Player {
   level: number;
   is_star_player: boolean;
   is_on_loan: boolean;
+  transfer_availability: string;
   loan_from_club: {
     id: string;
     name: string;

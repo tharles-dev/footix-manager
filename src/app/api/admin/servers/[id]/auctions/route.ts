@@ -11,11 +11,7 @@ const createAuctionSchema = z.object({
   countdown_minutes: z.number().min(1).max(1440),
   scheduled_start_time: z.string().refine((date) => {
     try {
-      // Verifica se a data está no formato correto (YYYY-MM-DDTHH:mm)
-      const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
-      if (!regex.test(date)) return false;
-
-      // Tenta criar um objeto Date para validar
+      // Verifica se a data está em um formato ISO válido
       const parsedDate = new Date(date);
       return !isNaN(parsedDate.getTime());
     } catch {
@@ -34,11 +30,7 @@ const updateAuctionSchema = z.object({
     .string()
     .refine((date) => {
       try {
-        // Verifica se a data está no formato correto (YYYY-MM-DDTHH:mm)
-        const regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
-        if (!regex.test(date)) return false;
-
-        // Tenta criar um objeto Date para validar
+        // Verifica se a data está em um formato ISO válido
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       } catch {
@@ -285,7 +277,7 @@ export async function GET(
         `
         )
         .eq("server_id", params.id)
-        .order("created_at", { ascending: false });
+        .order("scheduled_start_time", { ascending: true, nullsFirst: false });
 
       // Aplicar filtro de status se fornecido
       if (status) {

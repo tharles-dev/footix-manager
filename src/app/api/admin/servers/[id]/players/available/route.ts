@@ -100,8 +100,11 @@ export async function GET(
     if (type === "scheduled") {
       query = query.eq("auctions.status", "scheduled");
     } else if (type === "free") {
+      query = query.eq("auctions.status", "scheduled");
       query = query.is("auctions.id", null);
     }
+
+    console.log("type: ", type);
 
     // Paginação
     query = query.range(offset, offset + limit - 1);

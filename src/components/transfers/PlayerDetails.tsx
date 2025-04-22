@@ -10,12 +10,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { HirePlayerForm } from "@/components/transfers/HirePlayerForm";
-import { TrendingUp, TrendingDown } from "lucide-react";
+import { TrendingUp, TrendingDown, Gavel } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { TransferOfferForm } from "./TransferOfferForm";
 import { Club } from "@/types/club";
 import { PayClauseForm } from "./PayClauseForm";
 import { useApp } from "@/contexts/AppContext";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PlayerDetailsProps {
   player: {
@@ -42,6 +43,7 @@ interface PlayerDetailsProps {
     level: number;
     is_star_player: boolean;
     is_on_loan: boolean;
+    transfer_availability: string;
     loan_from_club: {
       id: string;
       name: string;
@@ -63,6 +65,7 @@ interface PlayerDetailsProps {
   club?: Club;
   isOpen: boolean;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
 export function PlayerDetails({
@@ -331,26 +334,38 @@ export function PlayerDetails({
               )}
             </div>
           </TabsContent>
+
+          {player.transfer_availability === "auction_only" && (
+            <Alert className="mt-4">
+              <Gavel className="h-4 w-4" />
+              <AlertDescription>
+                Este jogador está disponível apenas para leilão. Fique atento ao
+                mercado de leilões para fazer suas ofertas!
+              </AlertDescription>
+            </Alert>
+          )}
         </Tabs>
 
         <div className="flex justify-end gap-2">
-          {!player.club && (
+          {!player.club && player.transfer_availability !== "auction_only" && (
             <Button onClick={() => setShowHireForm(true)}>
               Contratar Jogador
             </Button>
           )}
-          {player.club && player.club.id !== club?.id && (
-            <>
-              <Button onClick={() => setShowOfferForm(true)}>
-                Enviar Proposta
-              </Button>
-              {server?.activate_clause && (
-                <Button onClick={() => setShowPayClauseForm(true)}>
-                  Pagar Multa Rescisória
+          {player.club &&
+            player.club.id !== club?.id &&
+            player.transfer_availability !== "auction_only" && (
+              <>
+                <Button onClick={() => setShowOfferForm(true)}>
+                  Enviar Proposta
                 </Button>
-              )}
-            </>
-          )}
+                {server?.activate_clause && (
+                  <Button onClick={() => setShowPayClauseForm(true)}>
+                    Pagar Multa Rescisória
+                  </Button>
+                )}
+              </>
+            )}
         </div>
 
         <Dialog open={showHireForm} onOpenChange={setShowHireForm}>

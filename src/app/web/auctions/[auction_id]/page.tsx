@@ -8,8 +8,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { AuctionCard } from "@/components/auctions/AuctionCard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { formatCurrency } from "@/lib/utils";
-import { Gavel, Calendar } from "lucide-react";
+import { formatCurrency, formatLargeNumber } from "@/lib/utils";
+import { Gavel, Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { useAuctionSubscription } from "@/hooks/useAuctionSubscription";
 import { useCountdown } from "@/hooks/useCountdown";
 
@@ -22,6 +22,8 @@ export default function AuctionDetailsPage({
   const { club } = useApp();
   const [bidAmount, setBidAmount] = useState<number>(0);
   const { toast } = useToast();
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
 
   // Usar o hook de subscription para leilões em tempo real
   const { auctions, loading, error, refetch } = useAuctionSubscription(
@@ -141,6 +143,24 @@ export default function AuctionDetailsPage({
     }
   };
 
+  // Função para ordenar e paginar os lances
+  const getPaginatedBids = () => {
+    if (!auction?.bids) return [];
+
+    const sortedBids = [...auction.bids].sort(
+      (a, b) => b.bid_amount - a.bid_amount
+    );
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+
+    return sortedBids.slice(startIndex, endIndex);
+  };
+
+  // Calcular total de páginas
+  const totalPages = auction?.bids
+    ? Math.ceil(auction.bids.length / itemsPerPage)
+    : 0;
+
   if (loading) {
     return (
       <div className="flex justify-center py-8">
@@ -220,19 +240,44 @@ export default function AuctionDetailsPage({
 
       <div className="bg-card rounded-lg p-6 space-y-4">
         <h2 className="text-xl font-semibold">Histórico de Lances</h2>
-        {auction.bid_history && auction.bid_history.length > 0 ? (
-          <div className="space-y-4">
-            {auction.bid_history.map(
-              (bid: {
-                id: string;
-                bid_amount: number;
-                created_at: string;
-                club: {
-                  id: string;
-                  name: string;
-                  logo_url: string | null;
-                };
-              }) => (
+        {auction.bids && auction.bids.length > 0 ? (
+          <>
+            {/* Estatísticas do Leilão */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">Total de Lances</p>
+                <p className="text-2xl font-bold">{auction.bids.length}</p>
+              </div>
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">Participantes</p>
+                <p className="text-2xl font-bold">
+                  {new Set(auction.bids.map((bid) => bid.club.id)).size}
+                </p>
+              </div>
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">Maior Lance</p>
+                <p
+                  className="text-2xl font-bold"
+                  dangerouslySetInnerHTML={{
+                    __html: formatLargeNumber(
+                      Math.max(...auction.bids.map((bid) => bid.bid_amount))
+                    ),
+                  }}
+                />
+              </div>
+              <div className="bg-muted p-4 rounded-lg">
+                <p className="text-sm text-muted-foreground">Valor Inicial</p>
+                <p
+                  className="text-2xl font-bold"
+                  dangerouslySetInnerHTML={{
+                    __html: formatLargeNumber(auction.starting_bid),
+                  }}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {getPaginatedBids().map((bid) => (
                 <div
                   key={bid.id}
                   className="flex items-center justify-between border-b pb-4"
@@ -260,11 +305,67 @@ export default function AuctionDetailsPage({
                       </p>
                     </div>
                   </div>
-                  <p className="font-bold">{formatCurrency(bid.bid_amount)}</p>
+                  <div className="text-right">
+                    <p
+                      className="font-bold"
+                      dangerouslySetInnerHTML={{
+                        __html: formatLargeNumber(bid.bid_amount),
+                      }}
+                    />
+                    {auction.bids.indexOf(bid) > 0 && (
+                      <p
+                        className={`text-sm ${
+                          bid.bid_amount >
+                          auction.bids[auction.bids.indexOf(bid) - 1].bid_amount
+                            ? "text-green-600"
+                            : "text-red-600"
+                        }`}
+                        dangerouslySetInnerHTML={{
+                          __html: formatLargeNumber(
+                            bid.bid_amount -
+                              auction.bids[auction.bids.indexOf(bid) - 1]
+                                .bid_amount,
+                            { showFull: false }
+                          ),
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
-              )
+              ))}
+            </div>
+
+            {/* Paginação */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.max(prev - 1, 1))
+                  }
+                  disabled={currentPage === 1}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-2" />
+                  Anterior
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  Página {currentPage} de {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                >
+                  Próxima
+                  <ChevronRight className="h-4 w-4 ml-2" />
+                </Button>
+              </div>
             )}
-          </div>
+          </>
         ) : (
           <p className="text-muted-foreground">Nenhum lance realizado ainda.</p>
         )}

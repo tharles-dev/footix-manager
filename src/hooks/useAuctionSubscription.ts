@@ -29,7 +29,7 @@ interface Auction {
     name: string;
     logo_url: string | null;
   } | null;
-  bid_history: {
+  bids: {
     id: string;
     bid_amount: number;
     created_at: string;

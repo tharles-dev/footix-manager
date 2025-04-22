@@ -38,8 +38,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Resolver } from "react-hook-form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { formatInTimeZone } from "date-fns-tz";
 
 // Tipos para os jogadores
 type Player = {
@@ -174,7 +174,12 @@ export default function ServerAuctionsPage() {
 
   // Formatar data
   const formatDate = (date: string) => {
-    return format(new Date(date), "dd/MM/yyyy HH:mm", { locale: ptBR });
+    return formatInTimeZone(
+      new Date(date),
+      "America/Sao_Paulo",
+      "dd/MM/yyyy HH:mm",
+      { locale: ptBR }
+    );
   };
 
   // Função para lidar com a edição de um leilão
@@ -184,10 +189,16 @@ export default function ServerAuctionsPage() {
       form.setValue("player_id", player.id);
       form.setValue("starting_bid", player.auction.starting_bid);
       form.setValue("countdown_minutes", player.auction.countdown_minutes);
-      form.setValue(
-        "scheduled_start_time",
-        player.auction.scheduled_start_time
+
+      // Converter a data UTC do backend para o formato local
+      const utcDate = new Date(player.auction.scheduled_start_time);
+      const localFormattedDate = formatInTimeZone(
+        utcDate,
+        "America/Sao_Paulo",
+        "yyyy-MM-dd'T'HH:mm"
       );
+      form.setValue("scheduled_start_time", localFormattedDate);
+
       setIsDialogOpen(true);
     }
   };
@@ -199,10 +210,14 @@ export default function ServerAuctionsPage() {
     form.setValue("starting_bid", player.value || 1000000);
     form.setValue("countdown_minutes", 60);
 
-    // Definir data e hora atual + 1 hora como padrão
+    // Definir data e hora atual como padrão (sem adicionar 1 hora)
     const now = new Date();
-    now.setHours(now.getHours() + 1);
-    const formattedDate = now.toISOString().slice(0, 16);
+    // Formatar para o formato esperado pelo input datetime-local (YYYY-MM-DDThh:mm)
+    const formattedDate = formatInTimeZone(
+      now,
+      "America/Sao_Paulo",
+      "yyyy-MM-dd'T'HH:mm"
+    );
     form.setValue("scheduled_start_time", formattedDate);
 
     setIsDialogOpen(true);
@@ -218,13 +233,27 @@ export default function ServerAuctionsPage() {
           : ""
       }`;
 
+      // Converter a data local para UTC antes de enviar
+      const localDate = new Date(data.scheduled_start_time);
+      const utcDate = formatInTimeZone(
+        localDate,
+        "UTC",
+        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"
+      );
+
+      // Criar uma cópia dos dados com a data em UTC
+      const dataToSend = {
+        ...data,
+        scheduled_start_time: utcDate,
+      };
+
       const response = await fetch(url, {
         method: isEditing ? "PUT" : "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify(dataToSend),
       });
 
       const responseData = await response.json();

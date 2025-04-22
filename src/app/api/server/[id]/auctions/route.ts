@@ -67,7 +67,7 @@ export async function GET(
       `
       )
       .eq("server_id", params.id)
-      .order("created_at", { ascending: false });
+      .order("scheduled_start_time", { ascending: true });
 
     // Aplicar filtro de status se fornecido
     if (status) {

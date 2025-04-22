@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useState } from "react";
 import { PlayerDetails } from "@/components/transfers/PlayerDetails";
-import { Eye, TrendingUp, TrendingDown } from "lucide-react";
+import { Eye, TrendingUp, TrendingDown, Gavel } from "lucide-react";
 import { getCountryCode } from "@/lib/utils/country";
 
 interface PlayerCardProps {
@@ -37,6 +37,7 @@ interface PlayerCardProps {
     level: number;
     is_star_player: boolean;
     is_on_loan: boolean;
+    transfer_availability: string;
     loan_from_club: {
       id: string;
       name: string;
@@ -114,6 +115,18 @@ export function PlayerCard({ player, onSuccess }: PlayerCardProps) {
                       className="bg-blue-100 text-blue-800 border-blue-300"
                     >
                       Emprestado
+                    </Badge>
+                  </>
+                )}
+                {player.transfer_availability === "auction_only" && (
+                  <>
+                    <span>•</span>
+                    <Badge
+                      variant="outline"
+                      className="bg-amber-100 text-amber-800 border-amber-300 flex items-center gap-1"
+                    >
+                      <Gavel className="h-3 w-3" />
+                      Leilão
                     </Badge>
                   </>
                 )}
