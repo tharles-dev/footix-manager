@@ -3,9 +3,10 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useRouter } from "next/navigation";
-import { Eye, TrendingUp, TrendingDown } from "lucide-react";
+import { Eye, TrendingUp, TrendingDown, Calendar } from "lucide-react";
 import { getCountryCode } from "@/lib/utils/country";
 import { formatCurrency } from "@/lib/utils";
+import { useCountdown } from "@/hooks/useCountdown";
 
 interface AuctionCardProps {
   auction: {
@@ -42,19 +43,13 @@ interface AuctionCardProps {
 
 export function AuctionCard({
   auction,
-  onBid,
   hideViewDetails = false,
-  hideBidButton = false,
 }: AuctionCardProps) {
   const router = useRouter();
-
-  //TODO: Add bid button
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const handleBid = () => {
-    if (onBid) {
-      onBid(auction.current_bid);
-    }
-  };
+  const { formattedTime, isFinished, isStarted } = useCountdown(
+    auction.scheduled_start_time,
+    auction.countdown_minutes
+  );
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -86,18 +81,24 @@ export function AuctionCard({
     }
   };
 
-  const getTimeRemaining = (startTime: string, countdownMinutes: number) => {
-    const start = new Date(startTime);
-    const end = new Date(start.getTime() + countdownMinutes * 60000);
-    const now = new Date();
+  const getCountdownText = () => {
+    if (!isStarted) {
+      return "Inicia em:";
+    }
+    if (isFinished) {
+      return "Finalizado";
+    }
+    return "Termina em:";
+  };
 
-    if (now > end) return "Finalizado";
+  const formatScheduledDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
 
-    const diff = end.getTime() - now.getTime();
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-    return `${hours}h ${minutes}m`;
+    return `${day}/${month} às ${hours}:${minutes}`;
   };
 
   const countryCode = getCountryCode(auction.player.nationality);
@@ -172,16 +173,16 @@ export function AuctionCard({
             </p>
           </div>
         </div>
-        {auction.status === "active" && (
+
+        {auction.status === "scheduled" && (
           <div className="mt-4">
-            <p className="text-sm text-muted-foreground mb-2">
-              Tempo Restante:{" "}
-              {getTimeRemaining(
-                auction.scheduled_start_time,
-                auction.countdown_minutes
-              )}
-            </p>
-            <div className="flex gap-2">
+            <div className="flex items-center text-sm text-blue-600">
+              <Calendar className="h-4 w-4 mr-2" />
+              <span className="font-medium">
+                Início: {formatScheduledDateTime(auction.scheduled_start_time)}
+              </span>
+            </div>
+            <div className="flex gap-2 mt-2">
               {!hideViewDetails && (
                 <Button
                   variant="outline"
@@ -193,9 +194,35 @@ export function AuctionCard({
                   Ver Detalhes
                 </Button>
               )}
-              {!hideBidButton && (
-                //TODO: Add bid button
-                <div></div>
+            </div>
+          </div>
+        )}
+
+        {auction.status === "active" && (
+          <div className="mt-4">
+            <div className="mt-2">
+              <span className="text-sm font-medium text-gray-500">
+                {getCountdownText()}
+              </span>
+              <span
+                className={`ml-2 font-bold ${
+                  isFinished ? "text-red-600" : "text-green-600"
+                }`}
+              >
+                {isFinished ? "Finalizado" : formattedTime}
+              </span>
+            </div>
+            <div className="flex gap-2">
+              {!hideViewDetails && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => router.push(`/web/auctions/${auction.id}`)}
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  Ver Detalhes
+                </Button>
               )}
             </div>
           </div>
