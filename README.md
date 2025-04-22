@@ -15,21 +15,56 @@
 ```
 /src
 │
-├── app
-│   ├── api/                  ← Rotas de API REST (auth, clube, servidor...)
-│   ├── admin/                ← Painel administrativo (com layout próprio)
-│   ├── web/                  ← App do jogador (responsivo, PWA-first)
+├── app/                      ← Rotas e páginas (App Router)
+│   ├── api/                  ← Rotas de API REST
+│   │   ├── admin/            ← Endpoints administrativos
+│   │   ├── auth/             ← Autenticação
+│   │   ├── club/             ← Operações de clube
+│   │   ├── clubs/            ← Operações de clubes
+│   │   ├── competitions/     ← Competições
+│   │   ├── players/          ← Jogadores
+│   │   ├── server/           ← Servidores
+│   │   ├── transfer/         ← Transferências
+│   │   └── user/             ← Usuários
+│   ├── admin/                ← Painel administrativo
 │   ├── auth/                 ← Autenticação e login
-│   ├── layout.tsx           ← Layout raiz (ex: auth, toast, etc)
-│   └── page.tsx             ← Redirecionamento conforme papel (admin/user)
+│   ├── server/               ← Páginas de servidor
+│   ├── web/                  ← App do jogador
+│   │   ├── auctions/         ← Leilões
+│   │   ├── dashboard/        ← Dashboard
+│   │   └── transfers/        ← Transferências
+│   ├── layout.tsx            ← Layout raiz
+│   └── page.tsx              ← Redirecionamento conforme papel
 │
-├── lib/                     ← Funções utilitárias (supabase, auth, helpers)
-├── components/              ← Componentes reutilizáveis (botões, cards, tabelas)
-├── contexts/                ← Contextos React (mobile menu, etc)
-├── hooks/                   ← Hooks personalizados (useSettings, etc)
-├── public/                  ← Manifest PWA, ícones
-├── next.config.ts
-└── manifest.json
+├── components/               ← Componentes reutilizáveis
+│   ├── admin/                ← Componentes do painel admin
+│   ├── auth/                 ← Componentes de autenticação
+│   ├── dashboard/            ← Componentes do dashboard
+│   ├── layout/               ← Componentes de layout
+│   ├── loaders/              ← Componentes de carregamento
+│   ├── pack/                 ← Componentes de pacotes
+│   ├── player/               ← Componentes de jogador
+│   ├── squad/                ← Componentes de elenco
+│   ├── tactics/              ← Componentes de táticas
+│   ├── transfers/            ← Componentes de transferências
+│   ├── ui/                   ← Componentes de UI
+│   └── user/                 ← Componentes de usuário
+│
+├── contexts/                 ← Contextos React
+├── hooks/                    ← Hooks personalizados
+├── lib/                      ← Funções utilitárias
+│   ├── api/                  ← Funções de API
+│   ├── auth/                 ← Funções de autenticação
+│   ├── supabase/             ← Configuração do Supabase
+│   ├── types/                ← Tipos TypeScript
+│   ├── utils/                ← Funções utilitárias
+│   ├── validations/          ← Validações
+│   ├── auction-utils.ts      ← Utilitários de leilões
+│   ├── database.types.ts     ← Tipos do banco de dados
+│   ├── fonts.ts              ← Configuração de fontes
+│   └── utils.ts              ← Utilitários gerais
+├── types/                    ← Tipos TypeScript
+└── utils/                    ← Funções utilitárias
 ```
 
 ## 🔄 Fluxo do Jogo
